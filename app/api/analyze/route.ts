@@ -355,6 +355,9 @@ export async function POST(request: Request) {
 
     const isDemoPendo = pendoKey.toLowerCase().trim() === 'demo' || pendoKey.toLowerCase().trim().startsWith('mock');
 
+    // Detect Novus OAuth format: "clientId:clientSecret"
+    const isNovusOAuth = !isDemoPendo && pendoKey.includes(':') && pendoKey.split(':').length === 2;
+
     if (isDemoPendo) {
       pendoPagesCount = 4;
       pendoFeaturesCount = 8;
@@ -364,7 +367,106 @@ export async function POST(request: Request) {
         '//*/billing',
         '//*/onboarding'
       );
+    } else if (isNovusOAuth) {
+      // -------------------------------------------------------
+      // Novus (Pendo Enterprise) OAuth2 client_credentials flow
+      // Key format: "clientId:clientSecret"
+      // -------------------------------------------------------
+      try {
+        const [clientId, clientSecret] = pendoKey.split(':');
+        const APP_ID = '-323232'; // default Novus app_id
+
+        // Step 1: Mint a short-lived Bearer token
+        const tokenParams = new URLSearchParams();
+        tokenParams.append('grant_type', 'client_credentials');
+        tokenParams.append('client_id', clientId.trim());
+        tokenParams.append('client_secret', clientSecret.trim());
+        tokenParams.append('app_id', APP_ID);
+
+        const tokenRes = await fetch('https://novus-api.pendo.io/mcp-auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: tokenParams.toString(),
+        });
+
+        if (!tokenRes.ok) {
+          const errTxt = await tokenRes.text();
+          return NextResponse.json(
+            { error: `Novus auth failed (${tokenRes.status}): ${errTxt}. Check your Client ID and Client Secret.` },
+            { status: 401 }
+          );
+        }
+
+        const tokenData = await tokenRes.json() as { access_token?: string };
+        const bearerToken = tokenData.access_token;
+
+        if (!bearerToken) {
+          return NextResponse.json(
+            { error: 'Novus returned no access token. Try rotating your credential in the Novus API Access settings.' },
+            { status: 401 }
+          );
+        }
+
+        // Step 2: Fetch pages & features from Novus API
+        const [pagesRes, featuresRes] = await Promise.all([
+          fetch('https://novus-api.pendo.io/api/v1/page', {
+            headers: {
+              Authorization: `Bearer ${bearerToken}`,
+              'Content-Type': 'application/json',
+            },
+          }),
+          fetch('https://novus-api.pendo.io/api/v1/feature', {
+            headers: {
+              Authorization: `Bearer ${bearerToken}`,
+              'Content-Type': 'application/json',
+            },
+          }),
+        ]);
+
+        const pagesData = pagesRes.ok ? await pagesRes.json() : [];
+        const featuresData = featuresRes.ok ? await featuresRes.json() : [];
+
+        if (Array.isArray(pagesData)) pendoPagesCount = pagesData.length;
+        if (Array.isArray(featuresData)) pendoFeaturesCount = featuresData.length;
+
+        // Extract URL rules from pages
+        if (Array.isArray(pagesData)) {
+          for (const page of pagesData) {
+            if (page && typeof page === 'object') {
+              const p = page as { rules?: unknown[]; rule?: unknown; url?: string };
+              if (Array.isArray(p.rules)) {
+                pendoRules.push(...p.rules.map((r: unknown) => String(r)));
+              } else if (p.rule) {
+                pendoRules.push(String(p.rule));
+              } else if (p.url) {
+                pendoRules.push(String(p.url));
+              }
+            }
+          }
+        }
+
+        // Extract URL rules from features
+        if (Array.isArray(featuresData)) {
+          for (const feature of featuresData) {
+            if (feature && typeof feature === 'object') {
+              const f = feature as { rules?: unknown[]; rule?: unknown; url?: string };
+              if (Array.isArray(f.rules)) {
+                pendoRules.push(...f.rules.map((r: unknown) => String(r)));
+              } else if (f.rule) {
+                pendoRules.push(String(f.rule));
+              } else if (f.url) {
+                pendoRules.push(String(f.url));
+              }
+            }
+          }
+        }
+      } catch (err: unknown) {
+        console.error('Novus API fail:', err);
+        const errMsg = err instanceof Error ? err.message : 'Unknown error';
+        return NextResponse.json({ error: `Novus connection failed: ${errMsg}` }, { status: 502 });
+      }
     } else {
+      // Standard Pendo integration key (x-pendo-integration-key header)
       try {
         const [pagesRes, featuresRes] = await Promise.all([
           fetch('https://app.pendo.io/api/v1/page', {
@@ -408,7 +510,6 @@ export async function POST(request: Request) {
         if (Array.isArray(pagesData)) pendoPagesCount = pagesData.length;
         if (Array.isArray(featuresData)) pendoFeaturesCount = featuresData.length;
 
-        // Extract rules
         if (Array.isArray(pagesData)) {
           for (const page of pagesData) {
             if (page && typeof page === 'object') {

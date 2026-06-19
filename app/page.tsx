@@ -1195,7 +1195,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             <div>
               <input
                 type="password"
-                placeholder="Pendo integration key (enter 'demo' to simulate)"
+                placeholder="Pendo key · Novus: clientId:clientSecret · or type 'demo'"
                 value={pendoKey}
                 onChange={(e) => setPendoKey(e.target.value)}
                 className="w-full h-11 px-4 text-xs font-sans bg-transparent border border-white/10 rounded-full focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all"
