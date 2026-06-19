@@ -1364,124 +1364,133 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
         </div>
       )}
 
-      {/* Results view */}
+      {/* Results view — sidebar dashboard layout */}
       {result && analysisCompleted && (
-        <div ref={resultsRef} id="results-section" className="w-full max-w-4xl mt-16 space-y-12">
-          
-          {/* Results Heading/Header */}
-          <div className="flex justify-between items-center border-b border-[#222222] pb-4 mb-4">
-            <span className="text-xs font-mono text-secondary break-all">
-              {result.repoUrl}
-            </span>
-            <div className="flex items-center gap-4">
+        <div ref={resultsRef} id="results-section" className="w-full max-w-6xl mt-12 flex rounded-2xl border border-white/[0.07] overflow-hidden shadow-2xl min-h-[80vh]">
+
+          {/* ── LEFT SIDEBAR ─────────────────────────────────────────── */}
+          <aside className="w-[220px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col">
+
+            {/* Repo / brand */}
+            <div className="px-5 py-5 border-b border-white/[0.06]">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-bold text-white">D</span>
+                </div>
+                <span className="text-[11px] font-semibold text-white font-sans tracking-tight truncate">DriftReport</span>
+              </div>
+              <p className="text-[9px] text-white/30 font-mono truncate pl-8">{result.repoUrl.replace('github.com/', '')}</p>
+            </div>
+
+            {/* Score pill */}
+            <div className="px-5 py-4 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[9px] text-white/30 font-sans uppercase tracking-widest">Drift Score</span>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${getBadgeColor(result.grade)}`}>{result.grade}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${result.score}%`,
+                      background: result.score >= 70 ? '#86efac' : result.score >= 40 ? '#fbbf24' : '#f87171',
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-white shrink-0">{result.score}%</span>
+              </div>
+            </div>
+
+            {/* Nav items */}
+            <nav className="flex-1 px-3 py-4 space-y-0.5">
+              {([
+                { id: 'dashboard', label: 'Dashboard & Audit', icon: '📊' },
+                { id: 'fixkit',    label: 'Fix Kit Playground', icon: '🛠️' },
+                { id: 'cicd',      label: 'CI/CD Guardrails',   icon: '🛡️' },
+              ] as const).map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer group ${
+                    activeTab === item.id
+                      ? 'bg-white/[0.08] text-white'
+                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <span className="text-sm shrink-0">{item.icon}</span>
+                  <span className="text-[11px] font-medium font-sans leading-tight">{item.label}</span>
+                  {activeTab === item.id && (
+                    <span className="ml-auto w-1 h-1 rounded-full bg-white/60 shrink-0" />
+                  )}
+                </button>
+              ))}
+            </nav>
+
+            {/* Sidebar footer actions */}
+            <div className="px-3 py-4 border-t border-white/[0.06] space-y-1">
               <button
                 type="button"
-                onClick={() => setIsChromeHudOpen(true)}
-                className="text-xs font-mono text-amber-partial border border-amber-partial/35 px-2.5 py-1 rounded hover:bg-amber-partial/5 transition-colors cursor-pointer"
+                onClick={handleShare}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
               >
-                ⚡ Chrome HUD Overlay
+                <span className="text-xs">🔗</span>
+                <span className="text-[10px] font-sans">{shareLabel}</span>
               </button>
-              <span className="text-tertiary font-mono">|</span>
               <button
                 type="button"
                 onClick={exportMarkdownReport}
-                className={`text-xs font-mono hover:underline bg-transparent border-none cursor-pointer p-0 transition-colors ${
-                  copiedReport ? 'text-green-covered font-semibold' : 'text-primary'
-                }`}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
               >
-                {copiedReport ? 'Report copied ✓' : 'Export report (Jira/MD)'}
+                <span className="text-xs">📋</span>
+                <span className="text-[10px] font-sans">{copiedReport ? 'Copied ✓' : 'Export report'}</span>
               </button>
-              <span className="text-tertiary font-mono">|</span>
               <button
                 type="button"
-                onClick={() => {
-                  resetForm();
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="text-xs font-mono text-primary hover:underline bg-transparent border-none cursor-pointer p-0"
+                onClick={() => { resetForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
               >
-                Run new analysis
+                <span className="text-xs">↩</span>
+                <span className="text-[10px] font-sans">New analysis</span>
               </button>
             </div>
-          </div>
+          </aside>
 
-          {/* Rate Limit Fallback Warning Banner */}
-          {rateLimitFallback && (
-            <div
-              style={{
-                backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                borderColor: 'rgba(239, 68, 68, 0.25)',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                color: '#ef4444'
-              }}
-              className="flex justify-between items-center text-xs font-mono px-4 py-3 rounded-md animate-fade-in mb-4"
-            >
-              <span>⚠️ Rate Limit Alert: GitHub API rate limit reached. Displaying offline simulation cache.</span>
-              <button
-                onClick={() => setRateLimitFallback(false)}
-                className="text-[#ef4444]/70 hover:text-[#ef4444] font-bold text-base cursor-pointer px-1 ml-2 bg-transparent border-none"
-              >
-                ×
-              </button>
+          {/* ── RIGHT MAIN CONTENT ────────────────────────────────────── */}
+          <div className="flex-1 bg-[#07070d] overflow-y-auto flex flex-col min-w-0">
+
+            {/* Top bar */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
+              <div>
+                <h2 className="text-sm font-semibold text-white font-sans">
+                  {activeTab === 'dashboard' ? 'Dashboard & Audit' : activeTab === 'fixkit' ? 'Fix Kit Playground' : 'CI/CD Guardrails'}
+                </h2>
+                <p className="text-[10px] text-white/30 font-mono mt-0.5">
+                  {activeTab === 'dashboard' ? `${result.totalRoutes} routes scanned · ${result.coveredCount} covered · ${result.untrackedCount} untracked` :
+                   activeTab === 'fixkit'    ? 'Auto-generated instrumentation snippets for each untracked route' :
+                                              'Telemetry coverage gates for your CI/CD pipeline'}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {rateLimitFallback && (
+                  <span className="text-[9px] font-mono text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded-full">⚠ Rate limit cache</span>
+                )}
+                {showDemoBanner && (
+                  <span className="text-[9px] font-mono text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded-full">Demo mode</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsChromeHudOpen(true)}
+                  className="text-[9px] font-mono text-amber-400/70 border border-amber-400/20 px-2.5 py-1 rounded-full hover:bg-amber-400/5 transition-colors cursor-pointer"
+                >
+                  ⚡ HUD
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Demo Banner */}
-          {showDemoBanner && (
-            <div
-              style={{
-                backgroundColor: 'rgba(245, 158, 11, 0.08)',
-                borderColor: 'rgba(245, 158, 11, 0.25)',
-                borderWidth: '1px',
-                borderStyle: 'solid',
-                color: '#f59e0b'
-              }}
-              className="flex justify-between items-center text-xs font-mono px-4 py-3 rounded-md animate-fade-in"
-            >
-              <span>Demo mode — showing sample data. Enter real credentials above to analyze your repo.</span>
-              <button
-                onClick={() => setShowDemoBanner(false)}
-                className="text-[#f59e0b]/70 hover:text-[#f59e0b] font-bold text-base cursor-pointer px-1 ml-2 bg-transparent border-none"
-              >
-                ×
-              </button>
-            </div>
-          )}
-
-          {/* Sub-navigation Tabs */}
-          <div className="flex border-b border-border/80 font-mono text-xs gap-1">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-4 py-2 border-b-2 font-bold cursor-pointer transition-colors ${
-                activeTab === 'dashboard'
-                  ? 'border-primary text-primary bg-surface'
-                  : 'border-transparent text-secondary hover:text-primary hover:bg-[#111]'
-              }`}
-            >
-              📊 Dashboard & Audit
-            </button>
-            <button
-              onClick={() => setActiveTab('fixkit')}
-              className={`px-4 py-2 border-b-2 font-bold cursor-pointer transition-colors ${
-                activeTab === 'fixkit'
-                  ? 'border-primary text-primary bg-surface'
-                  : 'border-transparent text-secondary hover:text-primary hover:bg-[#111]'
-              }`}
-            >
-              🛠️ Fix Kit Playground
-            </button>
-            <button
-              onClick={() => setActiveTab('cicd')}
-              className={`px-4 py-2 border-b-2 font-bold cursor-pointer transition-colors ${
-                activeTab === 'cicd'
-                  ? 'border-primary text-primary bg-surface'
-                  : 'border-transparent text-secondary hover:text-primary hover:bg-[#111]'
-              }`}
-            >
-              🛡️ CI/CD Guardrails
-            </button>
-          </div>
+            {/* Tab content */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8">
 
           {activeTab === 'dashboard' && (
             <>
@@ -2320,7 +2329,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
           {/* Section 3 — Fix Kit */}
           {activeTab === 'fixkit' && (
-            <div className="border-t border-border pt-10">
+            <div>
               {result.routes.every((r: AnalysisRoute) => r.status === 'covered') ? (
                 <div className="border border-border bg-surface p-12 rounded-md text-center space-y-3">
                   <span className="text-3xl">🎉</span>
@@ -2614,6 +2623,9 @@ jobs:
               </div>
             </div>
           )}
+
+          </div> {/* Close Tab content wrapper */}
+        </div> {/* Close Right Main Content panel */}
 
           {/* Floating Share Button */}
           <div className="fixed bottom-6 right-6 z-40">

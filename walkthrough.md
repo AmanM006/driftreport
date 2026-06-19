@@ -30,9 +30,13 @@ We have built, polished, and successfully compiled **Drift Report**—a producti
      - `Esc`: Dismiss the shortcut legend panel.
    - Displayed a floating keyboard map legend widget at the bottom-left of the viewport.
 
-5. **CI/CD Guardrails Tab** 🛡️:
-   - Refactored the results view into sub-tabs: **Dashboard & Audit**, **Fix Kit Playground**, and **CI/CD Guardrails**.
-   - Created the CI/CD tab with a copy-pasteable GitHub Actions workflow YAML block to run checks on every pull request, failing builds on telemetry drift.
+5. **Results Dashboard Sidebar Layout** 📊:
+   - Converted the stacked results tabs layout into a premium side-by-side dashboard layout with a left navigation sidebar containing:
+     - **Dashboard & Audit** 📊
+     - **Fix Kit Playground** 🛠️
+     - **CI/CD Guardrails** 🛡️
+   - The right panel displays the active tab content with a top action/status header, responsive scrolling, and clean padding.
+   - Built a copy-pasteable GitHub Actions workflow YAML block in the CI/CD tab to run telemetry scans on PRs.
 
 6. **Flat Triage Grid & Severity Engine** 🚨:
    - Implemented a toggle button between the original grouped folder list and a flat **Triage Grid** sorted by Severity (Critical, High, Medium, Low).
@@ -62,7 +66,6 @@ We have built, polished, and successfully compiled **Drift Report**—a producti
 
 13. **Premium Landing Page Redesign** 🎨:
     - **Navigation Header**: Introduced a sleek, responsive navigation bar featuring a custom gradient logo, a rounded search bar, and interactive menu items (`Articles`, `Inspiration`, `Glossary`, `Cases`, `Contribute`) matching the Design4Users layout.
-    - **Serif Quote Badge**: Embedded the editorial quote pill: `"Don’t forget, you are the hero of your own story." — Greg Boyle` in a custom italic serif style to set an inspirational tone.
     - **3D Telemetry Mesh Globe**: Built a custom SVG-based mesh globe with concentric, opposite-rotating coordinate orbits, a glowing radial glass core, and floating status cards.
     - **Pill Form Inputs & Glass Console**: Styled all search fields, segmented controls, repo badges, and the terminal console using premium glassmorphism filters, glowing capsule boundaries, and custom animations.
 
