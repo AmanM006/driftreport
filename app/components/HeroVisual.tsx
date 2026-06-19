@@ -8,14 +8,14 @@ interface TelemetryNode {
   route: string;
   status: 'covered' | 'partial' | 'untracked';
   detail: string;
-  x: number; // percentage width
-  y: number; // percentage height
+  x: number;
+  y: number;
 }
 
 export default function HeroVisual() {
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 500, height: 240 });
+  const [dimensions, setDimensions] = useState({ width: 500, height: 220 });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -33,104 +33,89 @@ export default function HeroVisual() {
   }, []);
 
   const nodes: TelemetryNode[] = [
-    { id: 1, name: 'Analytics Dashboard', route: '/dashboard/analytics', status: 'partial', detail: 'Feature flag drift on beta telemetry rules', x: 20, y: 25 },
-    { id: 2, name: 'Stripe Checkout', route: '/billing/checkout', status: 'covered', detail: 'Fully instrumented with valid shadow schema', x: 80, y: 22 },
-    { id: 3, name: 'User Authentication', route: '/profile/security', status: 'covered', detail: 'All security actions mapped successfully', x: 18, y: 75 },
-    { id: 4, name: 'Billing Invoices', route: '/billing/invoices', status: 'untracked', detail: 'Telemetry Gap: 0 rules map to codebase path', x: 82, y: 78 },
-    { id: 5, name: 'Settings Hub', route: '/dashboard/settings', status: 'untracked', detail: 'Drift Detected: active flag requires schema map', x: 85, y: 50 },
+    { id: 1, name: 'Analytics Dashboard', route: '/dashboard/analytics', status: 'partial', detail: 'Feature flag drift on beta telemetry rules', x: 18, y: 22 },
+    { id: 2, name: 'Stripe Checkout',      route: '/billing/checkout',    status: 'covered',   detail: 'Fully instrumented with valid shadow schema', x: 82, y: 20 },
+    { id: 3, name: 'User Auth',            route: '/profile/security',    status: 'covered',   detail: 'All security actions mapped successfully',  x: 16, y: 76 },
+    { id: 4, name: 'Billing Invoices',     route: '/billing/invoices',    status: 'untracked', detail: 'Telemetry Gap: 0 rules map to codebase path', x: 83, y: 78 },
+    { id: 5, name: 'Settings Hub',         route: '/dashboard/settings',  status: 'untracked', detail: 'Drift Detected: active flag requires schema map', x: 86, y: 48 },
   ];
 
   const centerX = 50;
   const centerY = 50;
 
-  const getAbsCoords = (pctX: number, pctY: number) => {
-    return {
-      x: (pctX / 100) * dimensions.width,
-      y: (pctY / 100) * dimensions.height,
-    };
-  };
+  const getAbsCoords = (pctX: number, pctY: number) => ({
+    x: (pctX / 100) * dimensions.width,
+    y: (pctY / 100) * dimensions.height,
+  });
 
   const centerPixel = getAbsCoords(centerX, centerY);
 
-  const activeNodeObj = hoveredNode !== null ? nodes.find(n => n.id === hoveredNode) : null;
-  const activeStatus = activeNodeObj?.status || null;
+  const statusColor = (s: TelemetryNode['status'], hovered: boolean) => {
+    if (s === 'covered')   return hovered ? 'rgba(134,239,172,0.55)' : 'rgba(134,239,172,0.15)';
+    if (s === 'partial')   return hovered ? 'rgba(251,191, 36,0.55)' : 'rgba(251,191, 36,0.15)';
+    return                          hovered ? 'rgba(248, 113,113,0.55)' : 'rgba(248,113,113,0.10)';
+  };
 
-  let centerDotColor = 'bg-indigo-500';
-  let centerGlow = 'rgba(99, 102, 241, 0.05)';
+  const dotColor = (s: TelemetryNode['status']) => {
+    if (s === 'covered')   return '#86efac';
+    if (s === 'partial')   return '#fbbf24';
+    return '#f87171';
+  };
 
-  if (activeStatus === 'covered') {
-    centerDotColor = 'bg-green-covered';
-    centerGlow = 'rgba(16, 185, 129, 0.08)';
-  } else if (activeStatus === 'partial') {
-    centerDotColor = 'bg-amber-partial';
-    centerGlow = 'rgba(245, 158, 11, 0.08)';
-  } else if (activeStatus === 'untracked') {
-    centerDotColor = 'bg-red-untracked';
-    centerGlow = 'rgba(244, 63, 94, 0.08)';
-  }
+  const activeNode = hoveredNode !== null ? nodes.find(n => n.id === hoveredNode) : null;
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="relative w-full max-w-2xl mx-auto h-[240px] bg-transparent overflow-hidden rounded-2xl select-none"
+      className="relative w-full max-w-2xl mx-auto h-[220px] overflow-hidden select-none"
     >
-      {/* Background glow effects - very subtle minimalist fade */}
-      <div 
-        className="absolute inset-0 transition-all duration-500 pointer-events-none"
+      {/* Subtle background glow at center */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-all duration-700"
         style={{
-          background: `radial-gradient(circle at center, ${centerGlow} 0%, transparent 60%)`
+          background: activeNode
+            ? `radial-gradient(ellipse 60% 50% at 50% 50%, ${statusColor(activeNode.status, false).replace('0.15', '0.06').replace('0.10', '0.04')} 0%, transparent 70%)`
+            : 'radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 70%)',
         }}
       />
 
-      {/* SVG Connection Lines */}
+      {/* SVG: crosshair anchor + connection lines */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-        {nodes.map((node) => {
-          const nodePixel = getAbsCoords(node.x, node.y);
-          const isHovered = hoveredNode === node.id;
-          
-          let color = 'rgba(255,255,255,0.05)';
-          if (node.status === 'covered') {
-            color = isHovered ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.12)';
-          } else if (node.status === 'partial') {
-            color = isHovered ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.12)';
-          } else {
-            color = isHovered ? 'rgba(244, 63, 94, 0.4)' : 'rgba(244, 63, 94, 0.08)';
-          }
+        {/* Tiny crosshair at center — no big circle */}
+        <line
+          x1={centerPixel.x - 6} y1={centerPixel.y}
+          x2={centerPixel.x + 6} y2={centerPixel.y}
+          stroke="rgba(255,255,255,0.12)" strokeWidth="0.8"
+        />
+        <line
+          x1={centerPixel.x} y1={centerPixel.y - 6}
+          x2={centerPixel.x} y2={centerPixel.y + 6}
+          stroke="rgba(255,255,255,0.12)" strokeWidth="0.8"
+        />
 
+        {/* Connection lines from center to each node */}
+        {nodes.map((node) => {
+          const np = getAbsCoords(node.x, node.y);
+          const isHovered = hoveredNode === node.id;
           return (
             <line
               key={node.id}
               x1={centerPixel.x}
               y1={centerPixel.y}
-              x2={nodePixel.x}
-              y2={nodePixel.y}
-              stroke={color}
-              strokeWidth={isHovered ? 1.2 : 0.8}
-              className="transition-colors duration-300"
+              x2={np.x}
+              y2={np.y}
+              stroke={statusColor(node.status, isHovered)}
+              strokeWidth={isHovered ? 1 : 0.7}
+              strokeDasharray={isHovered ? '0' : '3 4'}
+              className="transition-all duration-300"
             />
           );
         })}
       </svg>
 
-      {/* Central Minimalist Node */}
-      <div 
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex items-center justify-center"
-        style={{ left: `${centerX}%`, top: `${centerY}%` }}
-      >
-        <div className="w-10 h-10 rounded-full border border-white/10 bg-[#06060c] flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105">
-          <span className={`w-2.5 h-2.5 rounded-full ${centerDotColor} transition-colors duration-300`} />
-        </div>
-      </div>
-
-      {/* Floating Route Capsules */}
+      {/* Route capsules */}
       {nodes.map((node) => {
         const isHovered = hoveredNode === node.id;
-        
-        let statusColor = 'bg-slate-400';
-        if (node.status === 'covered') statusColor = 'bg-green-covered';
-        else if (node.status === 'partial') statusColor = 'bg-amber-partial';
-        else statusColor = 'bg-red-untracked';
-
         return (
           <div
             key={node.id}
@@ -141,36 +126,35 @@ export default function HeroVisual() {
               top: `${node.y}%`,
               transform: 'translate(-50%, -50%)',
             }}
-            className={`absolute z-20 px-2.5 py-1 rounded-full border flex items-center gap-2 cursor-pointer transition-all duration-300 bg-[#06060c]/40 ${
-              isHovered 
-                ? 'border-white/20 bg-[#06060c]/90 scale-102 shadow-md' 
-                : 'border-white/5 opacity-70'
+            className={`absolute z-20 px-2.5 py-1 rounded-full border flex items-center gap-1.5 cursor-default transition-all duration-300 ${
+              isHovered
+                ? 'bg-white/[0.06] border-white/15 shadow-sm scale-[1.04]'
+                : 'bg-[#07070e]/50 border-white/[0.06] opacity-65'
             }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${statusColor}`} />
-            <div className="flex flex-col text-[8.5px] leading-none text-left">
-              <span className="text-white font-medium">{node.name}</span>
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: dotColor(node.status) }}
+            />
+            <div className="flex flex-col leading-none text-left">
+              <span className="text-[8.5px] text-white font-medium whitespace-nowrap">{node.name}</span>
+              <span className="text-[7.5px] text-white/35 mt-[1px] font-mono whitespace-nowrap">{node.route}</span>
             </div>
           </div>
         );
       })}
 
-      {/* Minimal Card Details */}
-      {hoveredNode !== null && (
-        <div 
-          className="absolute left-1/2 bottom-2 -translate-x-1/2 px-3 py-1.5 border border-white/10 bg-[#06060c] rounded-xl shadow-lg z-30 text-[9px] w-56 text-center backdrop-blur-sm animate-fade-in"
-        >
-          <div className="font-semibold text-white mb-0.5">
-            {nodes[hoveredNode - 1].route}
-          </div>
-          <div className={`text-[8.5px] opacity-80 ${
-            nodes[hoveredNode - 1].status === 'covered' 
-              ? 'text-green-covered' 
-              : nodes[hoveredNode - 1].status === 'partial'
-              ? 'text-amber-partial' 
-              : 'text-red-untracked'
-          }`}>
-            {nodes[hoveredNode - 1].detail}
+      {/* Hover detail card — anchored bottom-center */}
+      {activeNode && (
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-2 z-30 animate-fade-in">
+          <div className="px-3 py-1.5 rounded-xl border border-white/10 bg-[#07070e]/90 backdrop-blur-sm shadow-md text-center">
+            <div className="text-[8.5px] font-medium text-white mb-0.5">{activeNode.route}</div>
+            <div
+              className="text-[8px] leading-relaxed max-w-[220px]"
+              style={{ color: dotColor(activeNode.status), opacity: 0.85 }}
+            >
+              {activeNode.detail}
+            </div>
           </div>
         </div>
       )}
