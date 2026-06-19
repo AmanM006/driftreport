@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import HeroVisual from './components/HeroVisual';
 
 interface AnalysisRoute {
   path: string;
@@ -1113,16 +1114,29 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
   return (
     <main className="min-h-screen flex flex-col items-center justify-start bg-background text-primary px-4 py-16 selection:bg-[#222]">
       {/* 40vh Hero Section */}
-      <div className="flex flex-col items-center justify-center text-center h-[35vh] min-h-[220px] w-full max-w-2xl mb-8">
-        <span className="text-[10px] font-mono text-tertiary uppercase tracking-[0.2em] mb-3">
-          drift report
-        </span>
-        <h1 className="text-3xl md:text-4xl font-mono tracking-tight font-bold text-primary mb-4">
-          Is your product flying blind?
+      <div className="flex flex-col items-center justify-center text-center w-full max-w-2xl mb-10 relative">
+        {/* Subtle backglow */}
+        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-80 h-80 bg-gradient-to-r from-red-untracked/10 via-amber-partial/10 to-green-covered/10 blur-[110px] rounded-full pointer-events-none" />
+        
+        {/* Decorative Tag */}
+        <div className="flex items-center gap-1.5 px-3 py-1 border border-border bg-surface rounded-full mb-4 text-[9px] font-mono text-secondary tracking-wider uppercase">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-covered animate-pulse" />
+          <span>Active telemetry audit node v2.5.0</span>
+        </div>
+
+        <h1 className="text-3xl md:text-5xl font-mono tracking-tighter font-bold text-primary mb-4 leading-tight">
+          Is your product <span className="bg-gradient-to-r from-red-untracked via-amber-partial to-green-covered bg-clip-text text-transparent">flying blind?</span>
         </h1>
-        <p className="text-sm text-secondary max-w-md font-sans">
-          Compare your codebase routes against Pendo tracking. Find every gap.
+        
+        <p className="text-xs md:text-sm text-secondary max-w-md font-sans mb-8">
+          Compare your codebase pages against Pendo analytics in real-time. Detect tracking drift, validate user funnels, and auto-generate telemetry fixes.
         </p>
+
+        {!isLoading && !analysisCompleted && (
+          <div className="w-full max-w-lg mb-4 animate-fade-in">
+            <HeroVisual />
+          </div>
+        )}
       </div>
 
       {/* Input form */}
