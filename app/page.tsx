@@ -1112,40 +1112,32 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-start bg-background text-primary px-4 py-8 selection:bg-[#222]">
-      {/* Premium Top Navigation Header */}
-      <header className="w-full max-w-5xl mx-auto flex items-center justify-between px-6 py-4 rounded-full border border-white/5 bg-white/[0.02] backdrop-blur-md mb-16 shadow-2xl relative z-30">
+    <main className="min-h-screen flex flex-col items-center justify-start bg-[#030307] text-primary px-4 py-8 selection:bg-[#222]">
+      {/* Minimalistic Navigation Header */}
+      <header className="w-full max-w-5xl mx-auto flex items-center justify-between py-6 mb-16 relative z-30">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 via-blue-500 to-emerald-400 flex items-center justify-center shadow-lg">
-            <span className="text-[10px] font-bold text-white font-heading">D</span>
+          <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-md">
+            <span className="text-[10px] font-bold text-[#030307] font-heading">D</span>
           </div>
-          <span className="font-heading font-extrabold text-sm text-white tracking-tight">
-            Drift<span className="text-slate-400 font-semibold">Report</span>
+          <span className="font-heading font-bold text-sm text-white tracking-tight">
+            Drift<span className="text-slate-400 font-normal">Report</span>
           </span>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6 text-xs text-slate-400 font-sans">
+        <nav className="hidden md:flex items-center gap-8 text-[11px] text-slate-400 font-sans">
           <a href="#" className="hover:text-white transition-colors">Articles</a>
           <a href="#" className="hover:text-white transition-colors">Inspiration</a>
-          <a href="#" className="hover:text-white transition-colors font-medium text-indigo-400 bg-indigo-500/5 px-2.5 py-1 rounded-full border border-indigo-500/10">Glossary</a>
+          <a href="#" className="hover:text-white transition-colors font-medium text-slate-300">Glossary</a>
           <a href="#" className="hover:text-white transition-colors">Cases</a>
           <a href="#" className="hover:text-white transition-colors">Contribute</a>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <div className="relative hidden sm:block">
-            <input 
-              type="text" 
-              placeholder="Search anything..." 
-              className="w-36 h-8 px-3 rounded-full bg-white/[0.03] border border-white/10 text-[10px] font-sans focus:outline-none focus:border-indigo-500/40 text-slate-300 placeholder-slate-500 transition-all"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] text-slate-600 font-mono">⌘K</span>
-          </div>
+        <div className="flex items-center gap-4">
           <button 
             type="button"
             id="demo-mode-btn"
             onClick={handleDemoClick}
-            className="h-8 px-4 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 hover:text-white text-[10px] font-sans font-semibold rounded-full border border-indigo-500/20 active:scale-[0.98] transition-all cursor-pointer"
+            className="h-8 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[10px] font-sans font-semibold rounded-full border border-white/5 active:scale-[0.98] transition-all cursor-pointer"
           >
             Demo Mode
           </button>
@@ -1154,24 +1146,21 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl mb-12 relative">
-        {/* Subtle backglow */}
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[550px] h-[550px] bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.12)_0%,transparent_70%)] pointer-events-none" />
-        
-        {/* Editorial Quote Pill */}
-        <div className="flex items-center gap-2.5 px-4 py-2 border border-white/5 bg-gradient-to-r from-indigo-500/5 to-emerald-500/5 rounded-2xl mb-8 shadow-xl backdrop-blur-md animate-fade-in">
-          <span className="text-[10.5px] text-slate-300 font-serif italic tracking-wide">
+        {/* Quote Pill */}
+        <div className="flex items-center gap-2 px-3 py-1 border border-white/5 bg-white/[0.01] rounded-full mb-8 shadow-sm backdrop-blur-sm animate-fade-in">
+          <span className="text-[10px] text-slate-400 font-serif italic tracking-wide">
             &ldquo;Don’t forget, you are the hero of your own story.&rdquo;
           </span>
-          <span className="text-[9px] font-sans text-indigo-400 font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+          <span className="text-[9px] font-sans text-slate-500 ml-1">
             — Greg Boyle
           </span>
         </div>
 
-        <h1 className="text-5xl md:text-6xl font-heading tracking-tight font-extrabold text-white mb-5 leading-[1.08] max-w-3xl">
-          Is your product <span className="bg-gradient-to-r from-indigo-300 via-blue-400 to-emerald-400 bg-clip-text text-transparent">flying blind?</span>
+        <h1 className="text-4xl md:text-5xl font-heading tracking-tight font-extrabold text-white mb-4 leading-[1.1] max-w-3xl">
+          Is your product <span className="bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">flying blind?</span>
         </h1>
         
-        <p className="text-xs md:text-sm text-slate-400 max-w-lg font-sans leading-relaxed mb-10">
+        <p className="text-xs md:text-sm text-slate-400 max-w-md font-sans leading-relaxed mb-8">
           Compare your codebase pages against Pendo analytics in real-time. Detect tracking drift, validate user funnels, and auto-generate telemetry fixes.
         </p>
 
@@ -1184,16 +1173,16 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
       {/* Input form */}
       {!isLoading && !analysisCompleted && (
-        <div className="space-y-4 w-full max-w-[500px] mx-auto z-10">
+        <div className="space-y-4 w-full max-w-[480px] mx-auto z-10">
           {/* Segmented control capsule switch */}
-          <div className="flex bg-white/[0.02] border border-white/5 rounded-full p-1 font-sans text-xs mb-8 w-full max-w-[360px] mx-auto backdrop-blur-md shadow-lg">
+          <div className="flex bg-white/[0.01] border border-white/5 rounded-full p-0.5 font-sans text-xs mb-8 w-full max-w-[320px] mx-auto">
             <button
               type="button"
               onClick={() => setInputMode('github')}
-              className={`flex-1 py-2 text-center rounded-full font-semibold cursor-pointer transition-all duration-300 ${
+              className={`flex-1 py-1.5 text-center rounded-full font-medium cursor-pointer transition-all duration-300 ${
                 inputMode === 'github'
-                  ? 'bg-white/10 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white/5 text-white'
+                  : 'text-slate-500 hover:text-slate-300'
               }`}
             >
               🔍 GitHub Scan
@@ -1201,13 +1190,13 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             <button
               type="button"
               onClick={() => setInputMode('sitemap')}
-              className={`flex-1 py-2 text-center rounded-full font-semibold cursor-pointer transition-all duration-300 ${
+              className={`flex-1 py-1.5 text-center rounded-full font-medium cursor-pointer transition-all duration-300 ${
                 inputMode === 'sitemap'
-                  ? 'bg-white/10 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white/5 text-white'
+                  : 'text-slate-500 hover:text-slate-300'
               }`}
             >
-              📝 Sitemap Scan (No-Code)
+              📝 Sitemap Scan
             </button>
           </div>
 
@@ -1219,7 +1208,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                   placeholder="GitHub repo URL (e.g. github.com/owner/repo)"
                   value={repoUrl}
                   onChange={(e) => setRepoUrl(e.target.value)}
-                  className="w-full h-11 px-4 text-xs font-sans bg-white/[0.01] border border-white/5 rounded-full focus:border-indigo-500/40 focus:outline-none placeholder-slate-600 focus:bg-white/[0.03] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
+                  className="w-full h-11 px-4 text-xs font-sans bg-transparent border border-white/10 rounded-full focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all"
                 />
               </div>
             ) : (
@@ -1231,7 +1220,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                   placeholder="e.g.&#10;/&#10;/dashboard&#10;/dashboard/settings&#10;/billing"
                   value={sitemapText}
                   onChange={(e) => setSitemapText(e.target.value)}
-                  className="w-full h-32 px-4 py-3 text-xs font-sans bg-white/[0.01] border border-white/5 rounded-2xl focus:border-indigo-500/40 focus:outline-none placeholder-slate-600 focus:bg-white/[0.03] transition-all resize-y min-h-[100px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
+                  className="w-full h-32 px-4 py-3 text-xs font-sans bg-transparent border border-white/10 rounded-2xl focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all resize-y min-h-[100px]"
                 />
               </div>
             )}
@@ -1242,7 +1231,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                 placeholder="Pendo integration key (enter 'demo' to simulate)"
                 value={pendoKey}
                 onChange={(e) => setPendoKey(e.target.value)}
-                className="w-full h-11 px-4 text-xs font-sans bg-white/[0.01] border border-white/5 rounded-full focus:border-indigo-500/40 focus:outline-none placeholder-slate-600 focus:bg-white/[0.03] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
+                className="w-full h-11 px-4 text-xs font-sans bg-transparent border border-white/10 rounded-full focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all"
               />
             </div>
 
@@ -1253,7 +1242,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                   placeholder="GitHub personal access token (optional — for private repos)"
                   value={githubToken}
                   onChange={(e) => setGithubToken(e.target.value)}
-                  className="w-full h-11 px-4 text-xs font-sans bg-white/[0.01] border border-white/5 rounded-full focus:border-indigo-500/40 focus:outline-none placeholder-slate-600 focus:bg-white/[0.03] transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
+                  className="w-full h-11 px-4 text-xs font-sans bg-transparent border border-white/10 rounded-full focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all"
                 />
               </div>
             )}
@@ -1261,14 +1250,14 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 h-11 bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-sans text-xs font-semibold rounded-full hover:shadow-[0_8px_20px_rgba(99,102,241,0.25)] active:scale-[0.99] transition-all cursor-pointer"
+                className="flex-1 h-11 bg-white text-[#030307] font-sans text-xs font-semibold rounded-full hover:bg-white/90 active:scale-[0.99] transition-all cursor-pointer shadow-md"
               >
                 Analyze drift →
               </button>
               <button
                 type="button"
                 onClick={handleRunJudgeDemo}
-                className="flex-1 h-11 bg-transparent text-amber-partial border border-amber-partial/20 hover:border-amber-partial hover:bg-amber-partial/5 font-sans text-xs font-semibold rounded-full active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 h-11 bg-transparent text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/5 font-sans text-xs font-semibold rounded-full active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 ⚡ Run Judge Demo
               </button>
