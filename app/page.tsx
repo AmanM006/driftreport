@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import HeroVisual from './components/HeroVisual';
+
 
 interface AnalysisRoute {
   path: string;
@@ -1113,36 +1113,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-start bg-[#030307] text-primary px-4 py-8 selection:bg-[#222]">
-      {/* Minimalistic Navigation Header */}
-      <header className="w-full max-w-5xl mx-auto flex items-center justify-between py-6 mb-16 relative z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-md">
-            <span className="text-[10px] font-bold text-[#030307] font-heading">D</span>
-          </div>
-          <span className="font-heading font-bold text-sm text-white tracking-tight">
-            Drift<span className="text-slate-400 font-normal">Report</span>
-          </span>
-        </div>
 
-        <nav className="hidden md:flex items-center gap-8 text-[11px] text-slate-400 font-sans">
-          <a href="#" className="hover:text-white transition-colors">Articles</a>
-          <a href="#" className="hover:text-white transition-colors">Inspiration</a>
-          <a href="#" className="hover:text-white transition-colors font-medium text-slate-300">Glossary</a>
-          <a href="#" className="hover:text-white transition-colors">Cases</a>
-          <a href="#" className="hover:text-white transition-colors">Contribute</a>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <button 
-            type="button"
-            id="demo-mode-btn"
-            onClick={handleDemoClick}
-            className="h-8 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[10px] font-sans font-semibold rounded-full border border-white/5 active:scale-[0.98] transition-all cursor-pointer"
-          >
-            Demo Mode
-          </button>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl mb-12 relative">
@@ -1164,11 +1135,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
           Compare your codebase pages against Pendo analytics in real-time. Detect tracking drift, validate user funnels, and auto-generate telemetry fixes.
         </p>
 
-        {!isLoading && !analysisCompleted && (
-          <div className="w-full max-w-lg mb-4 animate-fade-in">
-            <HeroVisual />
-          </div>
-        )}
+
       </div>
 
       {/* Input form */}
