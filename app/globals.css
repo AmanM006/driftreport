@@ -1,17 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital,wght@0,400;1,400&display=swap');
+
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0a0a0a;
-  --color-surface: #111111;
-  --color-border: #222222;
-  --color-green-covered: #22c55e;
+  --color-background: #030307;
+  --color-surface: #0a0a14;
+  --color-border: #1a1a2e;
+  --color-green-covered: #10b981;
   --color-amber-partial: #f59e0b;
-  --color-red-untracked: #ef4444;
-  --color-primary: #fafafa;
-  --color-secondary: #888888;
-  --color-tertiary: #444444;
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-red-untracked: #f43f5e;
+  --color-primary: #ffffff;
+  --color-secondary: #94a3b8;
+  --color-tertiary: #475569;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
 }
 
 body {
@@ -22,15 +25,71 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Terminal blinking solid block cursor animation */
-@keyframes blink-solid {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: rgba(10, 10, 20, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.blink-cursor-solid::after {
-  content: ' █';
-  animation: blink-solid 1s step-end infinite;
-  color: var(--color-primary);
-  font-weight: bold;
+.glass-pill {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* Pulse Glow animations */
+@keyframes orb-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.2), 0 0 80px rgba(99, 102, 241, 0.1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 60px rgba(59, 130, 246, 0.4), 0 0 110px rgba(99, 102, 241, 0.25);
+  }
+}
+
+.animate-orb-pulse {
+  animation: orb-pulse 4s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+@keyframes spin-reverse-slow {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-reverse-slow {
+  animation: spin-reverse-slow 25s linear infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 5s ease-in-out infinite;
+}
+
