@@ -336,6 +336,14 @@ export default function Home() {
   const [cleanedZombieRules, setCleanedZombieRules] = useState<string[]>([]);
   const [fixedPayloads, setFixedPayloads] = useState<string[]>([]);
   const [rateLimitFallback, setRateLimitFallback] = useState(false);
+  const [expandedRoutes, setExpandedRoutes] = useState<Record<string, boolean>>({});
+
+  const toggleRouteExpand = (path: string) => {
+    setExpandedRoutes(prev => ({
+      ...prev,
+      [path]: !prev[path]
+    }));
+  };
 
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -1906,70 +1914,140 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                           const isClickable = routeItem.status !== 'covered';
                           const severity = getRouteSeverity(routeItem);
                           const revRisk = getRevenueAtRisk(routeItem);
+                          const isExpanded = !!expandedRoutes[routeItem.path];
                           
                           return (
-                            <tr
-                              key={routeItem.path}
-                              onClick={() => {
-                                if (isClickable) {
-                                  handleClickRow(routeItem.path, routeItem.status);
-                                }
-                              }}
-                              className={`transition-colors duration-150 group ${
-                                isClickable ? 'cursor-pointer hover:bg-[#151515]' : ''
-                              }`}
-                            >
-                              <td className="px-4 py-3 font-semibold text-primary truncate max-w-[280px] sm:max-w-none">
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={`w-2 h-2 rounded-full inline-block shrink-0 ${
-                                      routeItem.status === 'covered'
-                                        ? 'bg-green-covered'
-                                        : routeItem.status === 'partial'
-                                        ? 'bg-amber-partial'
-                                        : 'bg-red-untracked'
-                                    }`}
-                                  />
-                                  <span className="truncate">{routeItem.path}</span>
-                                  
-                                  {routeItem.featureFlag && routeItem.status !== 'covered' && (
-                                    <span className="text-[8px] text-amber-partial bg-amber-partial/10 border border-amber-partial/20 px-1 py-0.2 rounded font-mono shrink-0">
-                                      🟠 Flag Drift
-                                    </span>
-                                  )}
+                            <React.Fragment key={routeItem.path}>
+                              <tr
+                                onClick={() => {
+                                  if (isClickable) {
+                                    toggleRouteExpand(routeItem.path);
+                                  }
+                                }}
+                                className={`transition-colors duration-150 group border-b border-border/20 last:border-b-0 ${
+                                  isClickable ? 'cursor-pointer hover:bg-[#151515]' : ''
+                                } ${isExpanded ? 'bg-[#1a1a1a]/30' : ''}`}
+                              >
+                                <td className="px-4 py-3 font-semibold text-primary truncate max-w-[280px] sm:max-w-none">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`w-2 h-2 rounded-full inline-block shrink-0 ${
+                                        routeItem.status === 'covered'
+                                          ? 'bg-green-covered'
+                                          : routeItem.status === 'partial'
+                                          ? 'bg-amber-partial'
+                                          : 'bg-red-untracked'
+                                      }`}
+                                    />
+                                    <span className="truncate">{routeItem.path}</span>
+                                    
+                                    {routeItem.featureFlag && routeItem.status !== 'covered' && (
+                                      <span className="text-[8px] text-amber-partial bg-amber-partial/10 border border-amber-partial/20 px-1 py-0.2 rounded font-mono shrink-0">
+                                        🟠 Flag Drift
+                                      </span>
+                                    )}
 
-                                  {isClickable && (
-                                    <span className="text-[9px] text-amber-partial opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                      ↓ fix
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase ${severity.color}`}>
-                                  {severity.label}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-right text-secondary">
-                                {routeItem.traffic?.toLocaleString() || '0'}
-                              </td>
-                              <td className="px-4 py-3 text-right text-amber-partial font-bold">
-                                {revRisk > 0 ? `$${revRisk.toLocaleString()}/mo` : '—'}
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <span
-                                  className={`text-[9px] px-2 py-0.5 rounded border font-mono uppercase font-medium inline-block ${
-                                    routeItem.status === 'covered'
-                                      ? 'border-green-covered/20 text-green-covered bg-green-covered/5'
-                                      : routeItem.status === 'partial'
-                                      ? 'border-amber-partial/20 text-amber-partial bg-amber-partial/5'
-                                      : 'border-red-untracked/20 text-red-untracked bg-red-untracked/5'
-                                  }`}
-                                >
-                                  {routeItem.status}
-                                </span>
-                              </td>
-                            </tr>
+                                    {isClickable && (
+                                      <span className="text-[9px] text-amber-partial opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                        {isExpanded ? '▲ close' : '→ info'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono uppercase ${severity.color}`}>
+                                    {severity.label}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-secondary">
+                                  {routeItem.traffic?.toLocaleString() || '0'}
+                                </td>
+                                <td className="px-4 py-3 text-right text-amber-partial font-bold">
+                                  {revRisk > 0 ? `$${revRisk.toLocaleString()}/mo` : '—'}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <span
+                                    className={`text-[9px] px-2 py-0.5 rounded border font-mono uppercase font-medium inline-block ${
+                                      routeItem.status === 'covered'
+                                        ? 'border-green-covered/20 text-green-covered bg-green-covered/5'
+                                        : routeItem.status === 'partial'
+                                        ? 'border-amber-partial/20 text-amber-partial bg-amber-partial/5'
+                                        : 'border-red-untracked/20 text-red-untracked bg-red-untracked/5'
+                                    }`}
+                                  >
+                                    {routeItem.status}
+                                  </span>
+                                </td>
+                              </tr>
+
+                              {/* Inline Expanded Dropdown (UX Fix) */}
+                              {isClickable && isExpanded && (
+                                <tr className="bg-[#121212] border-b border-border/40">
+                                  <td colSpan={5} className="px-6 py-4 font-mono text-xs">
+                                    <div className="space-y-4">
+                                      <div className="flex justify-between items-start gap-4">
+                                        <div>
+                                          <span className="text-[9px] text-tertiary uppercase tracking-wider block mb-1">Route description</span>
+                                          <p className="text-secondary font-sans text-xs">{routeItem.description || 'No description provided.'}</p>
+                                        </div>
+                                        
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleClickRow(routeItem.path, routeItem.status);
+                                          }}
+                                          className="px-3 py-1 bg-amber-partial text-background hover:bg-opacity-90 font-mono font-bold rounded transition-all cursor-pointer text-[10px] shrink-0"
+                                        >
+                                          🛠️ Fix (Check it out) →
+                                        </button>
+                                      </div>
+
+                                      {/* Warnings inside details */}
+                                      <div className="space-y-1.5">
+                                        {routeItem.featureFlag && (
+                                          <div className="border border-amber-partial/20 bg-amber-partial/5 p-2 rounded text-[10px] text-secondary flex items-center gap-2">
+                                            <span className="text-amber-partial">🟠 Feature Flag:</span>
+                                            <span>Active feature flag condition <code className="text-primary bg-surface px-1 border border-border rounded">{routeItem.featureFlag}</code> exists in the codebase.</span>
+                                          </div>
+                                        )}
+                                        {routeItem.payloadWarning && !fixedPayloads.includes(routeItem.path) && (
+                                          <div className="border border-red-untracked/20 bg-red-untracked/5 p-2 rounded text-[10px] text-secondary flex items-center gap-2">
+                                            <span className="text-red-untracked">⚠️ Payload Warning:</span>
+                                            <span>{routeItem.payloadWarning}</span>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Code snippet summary */}
+                                        <div>
+                                          <span className="text-[9px] text-tertiary uppercase tracking-wider block mb-1">Snippet Preview</span>
+                                          <pre className="bg-[#050505] border border-border/60 p-3 rounded text-[10px] overflow-x-auto text-secondary max-h-[120px] select-all leading-normal">
+                                            <code>{routeItem.snippet}</code>
+                                          </pre>
+                                        </div>
+
+                                        {/* Shadow Schema Summary */}
+                                        {routeItem.schema && Object.keys(routeItem.schema).length > 0 && (
+                                          <div>
+                                            <span className="text-[9px] text-tertiary uppercase tracking-wider block mb-1">Expected Pendo Schema</span>
+                                            <div className="grid grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto">
+                                              {Object.entries(routeItem.schema).map(([key, val]) => (
+                                                <div key={key} className="bg-[#050505] border border-border/40 px-2 py-1 rounded flex justify-between font-mono text-[9px]">
+                                                  <span className="text-primary font-bold">{key}</span>
+                                                  <span className="text-secondary">{val}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
                           );
                         })}
                     </tbody>
@@ -2018,71 +2096,137 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                           .map((routeItem) => {
                             const isClickable = routeItem.status !== 'covered';
                             const severity = getRouteSeverity(routeItem);
+                            const isExpanded = !!expandedRoutes[routeItem.path];
                             return (
-                              <div
-                                key={routeItem.path}
-                                onClick={() => {
-                                  if (isClickable) {
-                                    handleClickRow(routeItem.path, routeItem.status);
-                                  }
-                                }}
-                                className={`px-4 py-3 flex flex-col md:flex-row md:items-center justify-between text-xs font-mono transition-colors duration-150 group ${
-                                  isClickable ? 'cursor-pointer hover:bg-[#151515]' : ''
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 mb-2 md:mb-0 min-w-[200px]">
-                                  <span
-                                    className={`w-2 h-2 rounded-full inline-block shrink-0 ${
-                                      routeItem.status === 'covered'
-                                        ? 'bg-green-covered'
-                                        : routeItem.status === 'partial'
-                                        ? 'bg-amber-partial'
-                                        : 'bg-red-untracked'
-                                    }`}
-                                  />
-                                  <span className="text-primary text-sm tracking-tight truncate">{routeItem.path}</span>
+                              <React.Fragment key={routeItem.path}>
+                                <div
+                                  onClick={() => {
+                                    if (isClickable) {
+                                      toggleRouteExpand(routeItem.path);
+                                    }
+                                  }}
+                                  className={`px-4 py-3 flex flex-col md:flex-row md:items-center justify-between text-xs font-mono transition-colors duration-150 group border-b border-border/20 last:border-b-0 ${
+                                    isClickable ? 'cursor-pointer hover:bg-[#151515]' : ''
+                                  } ${isExpanded ? 'bg-[#1a1a1a]/30' : ''}`}
+                                >
+                                  <div className="flex items-center gap-2 mb-2 md:mb-0 min-w-[200px]">
+                                    <span
+                                      className={`w-2 h-2 rounded-full inline-block shrink-0 ${
+                                        routeItem.status === 'covered'
+                                          ? 'bg-green-covered'
+                                          : routeItem.status === 'partial'
+                                          ? 'bg-amber-partial'
+                                          : 'bg-red-untracked'
+                                      }`}
+                                    />
+                                    <span className="text-primary text-sm tracking-tight truncate">{routeItem.path}</span>
+                                    
+                                    {routeItem.featureFlag && routeItem.status !== 'covered' && (
+                                      <span className="text-[8px] text-amber-partial bg-amber-partial/10 border border-amber-partial/20 px-1 py-0.2 rounded font-mono shrink-0">
+                                        🟠 Flag Drift
+                                      </span>
+                                    )}
+
+                                    {isClickable && (
+                                      <span className="text-[10px] text-amber-partial opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                                        {isExpanded ? '▲ close' : '→ info'}
+                                      </span>
+                                    )}
+                                  </div>
                                   
-                                  {routeItem.featureFlag && routeItem.status !== 'covered' && (
-                                    <span className="text-[8px] text-amber-partial bg-amber-partial/10 border border-amber-partial/20 px-1 py-0.2 rounded font-mono shrink-0">
-                                      🟠 Flag Drift
-                                    </span>
-                                  )}
+                                  <div className="text-secondary md:flex-grow md:px-6 mb-2 md:mb-0 text-left md:text-center text-[11px] truncate flex items-center justify-start md:justify-center gap-2">
+                                    <span>{routeItem.name}</span>
+                                    {!isClickable && (
+                                      <span className={`text-[8px] px-1 rounded border uppercase font-mono ${severity.color}`}>
+                                        {severity.label}
+                                      </span>
+                                    )}
+                                  </div>
 
-                                  {isClickable && (
-                                    <span className="text-[10px] text-amber-partial opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                                      ↓ fix
+                                  <div className="flex justify-start md:justify-end gap-2 items-center">
+                                    {routeItem.status !== 'covered' && (
+                                      <span className={`text-[8px] px-1 rounded border uppercase font-mono ${severity.color}`}>
+                                        {severity.label}
+                                      </span>
+                                    )}
+                                    <span
+                                      className={`text-[9px] px-2 py-0.5 rounded-md border font-mono uppercase font-medium ${
+                                        routeItem.status === 'covered'
+                                          ? 'border-green-covered/20 text-green-covered bg-green-covered/5'
+                                          : routeItem.status === 'partial'
+                                          ? 'border-amber-partial/20 text-amber-partial bg-amber-partial/5'
+                                          : 'border-red-untracked/20 text-red-untracked bg-red-untracked/5'
+                                      }`}
+                                    >
+                                      {routeItem.status}
                                     </span>
-                                  )}
-                                </div>
-                                
-                                <div className="text-secondary md:flex-grow md:px-6 mb-2 md:mb-0 text-left md:text-center text-[11px] truncate flex items-center justify-start md:justify-center gap-2">
-                                  <span>{routeItem.name}</span>
-                                  {!isClickable && (
-                                    <span className={`text-[8px] px-1 rounded border uppercase font-mono ${severity.color}`}>
-                                      {severity.label}
-                                    </span>
-                                  )}
+                                  </div>
                                 </div>
 
-                                <div className="flex justify-start md:justify-end gap-2 items-center">
-                                  {routeItem.status !== 'covered' && (
-                                    <span className={`text-[8px] px-1 rounded border uppercase font-mono ${severity.color}`}>
-                                      {severity.label}
-                                    </span>
-                                  )}
-                                  <span
-                                    className={`text-[9px] px-2 py-0.5 rounded-md border font-mono uppercase font-medium ${
-                                      routeItem.status === 'covered'
-                                        ? 'border-green-covered/20 text-green-covered bg-green-covered/5'
-                                        : routeItem.status === 'partial'
-                                        ? 'border-amber-partial/20 text-amber-partial bg-amber-partial/5'
-                                        : 'border-red-untracked/20 text-red-untracked bg-red-untracked/5'
-                                    }`}
-                                  >
-                                    {routeItem.status}
-                                  </span>
-                                </div>
-                              </div>
+                                {/* Folder View Inline Expanded Dropdown (UX Fix) */}
+                                {isClickable && isExpanded && (
+                                  <div className="bg-[#121212] border-t border-b border-border/40 px-6 py-4 space-y-4 font-mono text-xs">
+                                    <div className="flex justify-between items-start gap-4">
+                                      <div>
+                                        <span className="text-[9px] text-tertiary uppercase tracking-wider block mb-1">Route description</span>
+                                        <p className="text-secondary font-sans text-xs">{routeItem.description || 'No description provided.'}</p>
+                                      </div>
+                                      
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleClickRow(routeItem.path, routeItem.status);
+                                        }}
+                                        className="px-3 py-1 bg-amber-partial text-background hover:bg-opacity-90 font-mono font-bold rounded transition-all cursor-pointer text-[10px] shrink-0"
+                                      >
+                                        🛠️ Fix (Check it out) →
+                                      </button>
+                                    </div>
+
+                                    {/* Warnings inside details */}
+                                    <div className="space-y-1.5">
+                                      {routeItem.featureFlag && (
+                                        <div className="border border-amber-partial/20 bg-amber-partial/5 p-2 rounded text-[10px] text-secondary flex items-center gap-2">
+                                          <span className="text-amber-partial">🟠 Feature Flag:</span>
+                                          <span>Active feature flag condition <code className="text-primary bg-surface px-1 border border-border rounded">{routeItem.featureFlag}</code> exists in the codebase.</span>
+                                        </div>
+                                      )}
+                                      {routeItem.payloadWarning && !fixedPayloads.includes(routeItem.path) && (
+                                        <div className="border border-red-untracked/20 bg-red-untracked/5 p-2 rounded text-[10px] text-secondary flex items-center gap-2">
+                                          <span className="text-red-untracked">⚠️ Payload Warning:</span>
+                                          <span>{routeItem.payloadWarning}</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {/* Code snippet summary */}
+                                      <div>
+                                        <span className="text-[9px] text-tertiary uppercase tracking-wider block mb-1">Snippet Preview</span>
+                                        <pre className="bg-[#050505] border border-border/60 p-3 rounded text-[10px] overflow-x-auto text-secondary max-h-[120px] select-all leading-normal">
+                                          <code>{routeItem.snippet}</code>
+                                        </pre>
+                                      </div>
+
+                                      {/* Shadow Schema Summary */}
+                                      {routeItem.schema && Object.keys(routeItem.schema).length > 0 && (
+                                        <div>
+                                          <span className="text-[9px] text-tertiary uppercase tracking-wider block mb-1">Expected Pendo Schema</span>
+                                          <div className="grid grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto">
+                                            {Object.entries(routeItem.schema).map(([key, val]) => (
+                                              <div key={key} className="bg-[#050505] border border-border/40 px-2 py-1 rounded flex justify-between font-mono text-[9px]">
+                                                <span className="text-primary font-bold">{key}</span>
+                                                <span className="text-secondary">{val}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </React.Fragment>
                             );
                           })}
                       </div>
