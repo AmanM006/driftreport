@@ -264,12 +264,14 @@ function safeBtoa(str: string): string {
 // Safe UTF-8 Base64 Decoding (Loop 12)
 function safeAtob(str: string): string {
   try {
-    return decodeURIComponent(atob(str).split('').map(c => {
+    // Fix URL-safe base64 (replace - with + and _ with /) and add padding
+    const normalized = str.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (4 - str.length % 4) % 4);
+    return decodeURIComponent(atob(normalized).split('').map(c => {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
   } catch (e) {
     console.error(e);
-    return atob(str);
+    try { return atob(str); } catch { return ''; }
   }
 }
 
@@ -283,6 +285,28 @@ const trackPendoEvent = (eventName: string, properties: Record<string, unknown>)
     console.error('Failed to track Pendo event:', error);
   }
 };
+
+// ── History helpers ─────────────────────────────────────────────────────────
+interface HistoryEntry {
+  id: string;
+  repoUrl: string;
+  score: number;
+  grade: string;
+  totalRoutes: number;
+  date: string;
+  result: AnalysisResult;
+}
+function loadHistory(): HistoryEntry[] {
+  try { return JSON.parse(localStorage.getItem('dr_history') || '[]'); } catch { return []; }
+}
+function saveToHistory(r: AnalysisResult) {
+  try {
+    const entry: HistoryEntry = { id: Date.now().toString(), repoUrl: r.repoUrl, score: r.score, grade: r.grade, totalRoutes: r.totalRoutes, date: new Date().toISOString(), result: r };
+    const updated = [entry, ...loadHistory().filter(e => e.repoUrl !== r.repoUrl)].slice(0, 8);
+    localStorage.setItem('dr_history', JSON.stringify(updated));
+  } catch { /* ignore */ }
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [repoUrl, setRepoUrl] = useState('');
@@ -302,6 +326,7 @@ export default function Home() {
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedReport, setCopiedReport] = useState(false);
   const [shareLabel, setShareLabel] = useState('Share report →');
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   // Domination features states
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
@@ -382,8 +407,8 @@ export default function Home() {
 
   const activeTerminalLines = isJudgeSimulatorActive ? judgeTerminalLines : terminalLines;
 
-  // Load parameter logic
   useEffect(() => {
+    setHistory(loadHistory());
     const params = new URLSearchParams(window.location.search);
     const rParam = params.get('r');
     const demoParam = params.get('demo');
@@ -571,6 +596,8 @@ export default function Home() {
             }
             setAnalysisCompleted(true);
             setShowDemoBanner(false);
+            saveToHistory(data);
+            setHistory(loadHistory());
 
             trackPendoEvent('drift_score_generated', {
               score: data.score,
@@ -897,7 +924,9 @@ ${result.audit.tips.map(t => `- ${t}`).join('\n')}
     trackPendoEvent('pendo_sync_clicked', { route: routeItem.path });
 
     try {
-      if (pendoKey) {
+      const isDemo = !pendoKey || pendoKey.toLowerCase().trim() === 'demo' || pendoKey.toLowerCase().trim().startsWith('mock');
+
+      if (!isDemo) {
         const res = await fetch('/api/pendo-proxy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -917,12 +946,12 @@ ${result.audit.tips.map(t => `- ${t}`).join('\n')}
           throw new Error(data.error || 'Direct sync failed.');
         }
       } else {
-        // Mock connection timeout for demo mode
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Simulate sync delay in demo mode
+        await new Promise(resolve => setTimeout(resolve, 900));
       }
 
       setSyncingIndex(prev => ({ ...prev, [routeItem.path]: 'success' }));
-      showToast(`Pendo Active Sync: Configured rule for ${routeItem.path}`);
+      showToast(`✓ Rule created for ${routeItem.path}${isDemo ? ' (simulated)' : ''}`);
 
       // Increment Pendo Page rules scanned metadata count
       if (result && result.pendoMeta) {
@@ -1089,7 +1118,8 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 *Reported by [Drift Report Command Center](https://github.com/Shardz4/lore)*`;
 
     const githubUrl = `https://github.com/${owner}/${repo}/issues/new?title=${title}&body=${encodeURIComponent(markdownBody)}`;
-    const linearUrl = `https://linear.app/issue/new?title=${title}&description=${encodeURIComponent(markdownBody)}`;
+    // Linear uses /new with title + description as query params (team-agnostic deep link)
+    const linearUrl = `https://linear.app/new?title=${title}&description=${encodeURIComponent(markdownBody)}`;
 
     return { githubUrl, linearUrl };
   };
@@ -1117,15 +1147,6 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
       {/* Hero Section */}
       <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl mb-12 relative">
-        {/* Quote Pill */}
-        <div className="flex items-center gap-2 px-3 py-1 border border-white/5 bg-white/[0.01] rounded-full mb-8 shadow-sm backdrop-blur-sm animate-fade-in">
-          <span className="text-[10px] text-slate-400 font-serif italic tracking-wide">
-            &ldquo;Don’t forget, you are the hero of your own story.&rdquo;
-          </span>
-          <span className="text-[9px] font-sans text-slate-500 ml-1">
-            — Greg Boyle
-          </span>
-        </div>
 
         <h1 className="text-4xl md:text-5xl font-heading tracking-tight font-extrabold text-white mb-4 leading-[1.1] max-w-3xl">
           Is your product <span className="bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">flying blind?</span>
@@ -1137,6 +1158,42 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
 
       </div>
+
+      {/* Past Analyses History */}
+      {!isLoading && !analysisCompleted && history.length > 0 && (
+        <div className="w-full max-w-[480px] mx-auto mb-6 animate-fade-in">
+          <p className="text-[10px] text-white/25 font-sans uppercase tracking-widest mb-2 text-center">Past analyses</p>
+          <div className="flex flex-col gap-1">
+            {history.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => {
+                  setResult(entry.result);
+                  setRepoUrl(entry.repoUrl);
+                  setAnalysisCompleted(true);
+                  setShowDemoBanner(false);
+                  setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04] hover:border-white/10 transition-all text-left group"
+              >
+                <span className="text-[10px] text-white/50 font-mono truncate max-w-[260px] group-hover:text-white/70 transition-colors">
+                  {entry.repoUrl}
+                </span>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                    entry.grade === 'A' ? 'text-green-400/80 bg-green-400/10' :
+                    entry.grade === 'B' || entry.grade === 'C' ? 'text-amber-400/80 bg-amber-400/10' :
+                    'text-red-400/80 bg-red-400/10'
+                  }`}>{entry.grade}</span>
+                  <span className="text-[9px] text-white/25">{entry.score}%</span>
+                  <span className="text-[9px] text-white/20">{new Date(entry.date).toLocaleDateString()}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Input form */}
       {!isLoading && !analysisCompleted && (
