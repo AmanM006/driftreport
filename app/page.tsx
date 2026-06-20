@@ -424,6 +424,13 @@ export default function Home() {
         setResult(parsed);
         setRepoUrl(parsed.repoUrl || '');
         setAnalysisCompleted(true);
+        trackPendoEvent('shared_report_viewed', {
+          score: parsed.score,
+          grade: parsed.grade,
+          total_routes: parsed.totalRoutes,
+          untracked_count: parsed.untrackedCount,
+          repo_url: parsed.repoUrl || '',
+        });
         setTimeout(() => {
           resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 300);
@@ -504,11 +511,25 @@ export default function Home() {
           setRepoUrl(MOCK_DATA.repoUrl);
           setIsLoading(false);
           setAnalysisCompleted(true);
+          trackPendoEvent('analysis_failed', {
+            error_message: 'GitHub rate limit hit',
+            http_status: 403,
+            input_mode: inputMode,
+            has_github_token: !!githubToken,
+            is_rate_limit: true,
+          });
           return;
         }
         setError(data.error || 'An error occurred during analysis');
         setIsLoading(false);
         setLoadingStep(0);
+        trackPendoEvent('analysis_failed', {
+          error_message: String(data.error || 'An error occurred during analysis').substring(0, 100),
+          http_status: res.status,
+          input_mode: inputMode,
+          has_github_token: !!githubToken,
+          is_rate_limit: false,
+        });
         return;
       }
 
@@ -610,9 +631,16 @@ export default function Home() {
       .filter((r: AnalysisRoute) => r.status !== 'covered')
       .map((r: AnalysisRoute) => r.snippet)
       .join('\n\n// ---\n\n');
+    const uncoveredRoutes = result.routes.filter((r: AnalysisRoute) => r.status !== 'covered');
     navigator.clipboard.writeText(snippets);
     setCopiedAll(true);
     showToast('All snippets copied');
+    trackPendoEvent('all_snippets_copied', {
+      snippet_count: uncoveredRoutes.length,
+      untracked_count: result.routes.filter((r: AnalysisRoute) => r.status === 'untracked').length,
+      partial_count: result.routes.filter((r: AnalysisRoute) => r.status === 'partial').length,
+      score: result.score,
+    });
     setTimeout(() => {
       setCopiedAll(false);
     }, 2000);
@@ -658,6 +686,14 @@ ${result.audit.tips.map(t => `- ${t}`).join('\n')}
     navigator.clipboard.writeText(mdContent);
     setCopiedReport(true);
     showToast('Audit Report copied as Markdown');
+    trackPendoEvent('report_exported', {
+      score: result.score,
+      grade: result.grade,
+      total_routes: result.totalRoutes,
+      untracked_count: result.untrackedCount,
+      has_audit_insights: !!result.audit,
+      repo_url: result.repoUrl,
+    });
     setTimeout(() => {
       setCopiedReport(false);
     }, 2000);
@@ -713,6 +749,12 @@ ${result.audit.tips.map(t => `- ${t}`).join('\n')}
 
     setLiveEvents(prev => [newEvent, ...prev.slice(0, 19)]);
     showToast(`Remediation Sandbox: Dispatched ${routeItem.eventName}`);
+    trackPendoEvent('simulation_event_dispatched', {
+      simulated_event_name: routeItem.eventName,
+      route: routeItem.path,
+      route_status: routeItem.status,
+      simulation_source: 'fix_kit_playground',
+    });
 
     // Update status to covered dynamically
     simulateRouteTracking(routeItem.path);
@@ -752,6 +794,12 @@ ${result.audit.tips.map(t => `- ${t}`).join('\n')}
 
       setSyncingIndex(prev => ({ ...prev, [routeItem.path]: 'success' }));
       showToast(`✓ Rule created for ${routeItem.path}${isDemo ? ' (simulated)' : ''}`);
+      trackPendoEvent('route_sync_completed', {
+        route: routeItem.path,
+        route_name: routeItem.name,
+        is_demo: isDemo,
+        sync_result: 'success',
+      });
 
       // Increment Pendo Page rules scanned metadata count
       if (result && result.pendoMeta) {
@@ -1119,6 +1167,13 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                       setRepoUrl(entry.repoUrl);
                       setAnalysisCompleted(true);
                       setShowDemoBanner(false);
+                      trackPendoEvent('history_entry_loaded', {
+                        repo_url: entry.repoUrl,
+                        score: entry.score,
+                        grade: entry.grade,
+                        total_routes: entry.totalRoutes,
+                        entry_age_days: Math.floor((Date.now() - new Date(entry.date).getTime()) / 86400000),
+                      });
                     }}
                     className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04] hover:border-white/10 transition-all text-left group"
                   >
@@ -1281,6 +1336,13 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                           setRepoUrl(entry.repoUrl);
                           setAnalysisCompleted(true);
                           setShowDemoBanner(false);
+                          trackPendoEvent('history_entry_loaded', {
+                            repo_url: entry.repoUrl,
+                            score: entry.score,
+                            grade: entry.grade,
+                            total_routes: entry.totalRoutes,
+                            entry_age_days: Math.floor((Date.now() - new Date(entry.date).getTime()) / 86400000),
+                          });
                         }}
                         className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-all duration-200 cursor-pointer group ${
                           isCurrent
@@ -2321,6 +2383,14 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                           href={getIssueLinks(routeItem).githubUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => trackPendoEvent('issue_exported', {
+                            route: routeItem.path,
+                            route_name: routeItem.name,
+                            route_status: routeItem.status,
+                            export_target: 'github',
+                            has_feature_flag: !!routeItem.featureFlag,
+                            has_payload_warning: !!routeItem.payloadWarning,
+                          })}
                           className="px-3 py-1.5 border border-[#222222] text-primary bg-surface hover:bg-[#111111] font-semibold rounded-md transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           🎫 Export GitHub
@@ -2329,6 +2399,14 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                           href={getIssueLinks(routeItem).linearUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => trackPendoEvent('issue_exported', {
+                            route: routeItem.path,
+                            route_name: routeItem.name,
+                            route_status: routeItem.status,
+                            export_target: 'linear',
+                            has_feature_flag: !!routeItem.featureFlag,
+                            has_payload_warning: !!routeItem.payloadWarning,
+                          })}
                           className="px-3 py-1.5 border border-[#222222] text-primary bg-surface hover:bg-[#111111] font-semibold rounded-md transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           📐 Export Linear
@@ -2504,6 +2582,11 @@ jobs:
         run: |
           drift-scanner --dir ./app --threshold 80 --comment-pr true`);
                       showToast("CI/CD YAML copied to clipboard");
+                      trackPendoEvent('cicd_yaml_copied', {
+                        score: result?.score,
+                        untracked_count: result?.untrackedCount,
+                        total_routes: result?.totalRoutes,
+                      });
                     }}
                     className="absolute top-3 right-3 px-2 py-1 rounded-md text-[10px] font-mono border border-border bg-[#0d0d0d] hover:bg-[#1a1a1a] transition-all text-secondary hover:text-primary cursor-pointer"
                   >
