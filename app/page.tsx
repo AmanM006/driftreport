@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import HeroVisual from './components/HeroVisual';
 
 
 interface AnalysisRoute {
@@ -252,9 +253,9 @@ useEffect(() => {
 // Safe UTF-8 Base64 Encoding (Loop 12)
 function safeBtoa(str: string): string {
   try {
-    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => {
-      return String.fromCharCode(parseInt(p1, 16));
-    }));
+    const bytes = new TextEncoder().encode(str);
+    const binString = Array.from(bytes, byte => String.fromCharCode(byte)).join("");
+    return btoa(binString);
   } catch (e) {
     console.error(e);
     return btoa(str);
@@ -264,14 +265,21 @@ function safeBtoa(str: string): string {
 // Safe UTF-8 Base64 Decoding (Loop 12)
 function safeAtob(str: string): string {
   try {
-    // Fix URL-safe base64 (replace - with + and _ with /) and add padding
     const normalized = str.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (4 - str.length % 4) % 4);
-    return decodeURIComponent(atob(normalized).split('').map(c => {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
+    const binary = atob(normalized);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
   } catch (e) {
     console.error(e);
-    try { return atob(str); } catch { return ''; }
+    try {
+      const normalized = str.replace(/-/g, '+').replace(/_/g, '/');
+      return atob(normalized);
+    } catch {
+      return '';
+    }
   }
 }
 
@@ -528,6 +536,7 @@ export default function Home() {
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setAnalysisCompleted(false);
 
     if (inputMode === 'github' && !repoUrl) {
       setError('GitHub repository URL is required.');
@@ -637,6 +646,7 @@ export default function Home() {
 
   const handleRunJudgeDemo = (e: React.MouseEvent) => {
     e.preventDefault();
+    setAnalysisCompleted(false);
     setIsJudgeSimulatorActive(true);
     setIsLoading(true);
     setLoadingStep(1);
@@ -1141,72 +1151,19 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
     }
   };
 
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-start bg-[#030307] text-primary px-4 py-8 selection:bg-[#222]">
-
-
-      {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl mb-12 relative">
-
-        <h1 className="text-4xl md:text-5xl font-heading tracking-tight font-extrabold text-white mb-4 leading-[1.1] max-w-3xl">
-          Is your product <span className="bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">flying blind?</span>
-        </h1>
-        
-        <p className="text-xs md:text-sm text-slate-400 max-w-md font-sans leading-relaxed mb-8">
-          Compare your codebase pages against Pendo analytics in real-time. Detect tracking drift, validate user funnels, and auto-generate telemetry fixes.
-        </p>
-
-
-      </div>
-
-      {/* Past Analyses History */}
-      {!isLoading && !analysisCompleted && history.length > 0 && (
-        <div className="w-full max-w-[480px] mx-auto mb-6 animate-fade-in">
-          <p className="text-[10px] text-white/25 font-sans uppercase tracking-widest mb-2 text-center">Past analyses</p>
-          <div className="flex flex-col gap-1">
-            {history.map((entry) => (
-              <button
-                key={entry.id}
-                type="button"
-                onClick={() => {
-                  setResult(entry.result);
-                  setRepoUrl(entry.repoUrl);
-                  setAnalysisCompleted(true);
-                  setShowDemoBanner(false);
-                  setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04] hover:border-white/10 transition-all text-left group"
-              >
-                <span className="text-[10px] text-white/50 font-mono truncate max-w-[260px] group-hover:text-white/70 transition-colors">
-                  {entry.repoUrl}
-                </span>
-                <div className="flex items-center gap-2 shrink-0 ml-2">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                    entry.grade === 'A' ? 'text-green-400/80 bg-green-400/10' :
-                    entry.grade === 'B' || entry.grade === 'C' ? 'text-amber-400/80 bg-amber-400/10' :
-                    'text-red-400/80 bg-red-400/10'
-                  }`}>{entry.grade}</span>
-                  <span className="text-[9px] text-white/25">{entry.score}%</span>
-                  <span className="text-[9px] text-white/20">{new Date(entry.date).toLocaleDateString()}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Input form */}
-      {!isLoading && !analysisCompleted && (
-        <div className="space-y-4 w-full max-w-[480px] mx-auto z-10">
-          {/* Segmented control capsule switch */}
-          <div className="flex bg-white/[0.01] border border-white/5 rounded-full p-0.5 font-sans text-xs mb-8 w-full max-w-[320px] mx-auto">
+  const renderScanForm = (isSidebar = false) => {
+    return (
+      <form onSubmit={handleAnalyze} className="space-y-4 w-full">
+        {/* Input Mode Selector for Sidebar or Center */}
+        {(!isSidebar ? (
+          <div className="flex bg-white/[0.02] border border-white/5 rounded-full p-0.5 font-sans text-xs mb-6 w-full max-w-[320px] mx-auto">
             <button
               type="button"
               onClick={() => setInputMode('github')}
               className={`flex-1 py-1.5 text-center rounded-full font-medium cursor-pointer transition-all duration-300 ${
                 inputMode === 'github'
-                  ? 'bg-white/5 text-white'
-                  : 'text-slate-500 hover:text-slate-300'
+                  ? 'bg-white/10 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               🔍 GitHub Scan
@@ -1216,157 +1173,237 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
               onClick={() => setInputMode('sitemap')}
               className={`flex-1 py-1.5 text-center rounded-full font-medium cursor-pointer transition-all duration-300 ${
                 inputMode === 'sitemap'
-                  ? 'bg-white/5 text-white'
-                  : 'text-slate-500 hover:text-slate-300'
+                  ? 'bg-white/10 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               📝 Sitemap Scan
             </button>
           </div>
-
-          <form onSubmit={handleAnalyze} className="space-y-4">
-            {inputMode === 'github' ? (
-              <div>
-                <input
-                  type="text"
-                  placeholder="GitHub repo URL (e.g. github.com/owner/repo)"
-                  value={repoUrl}
-                  onChange={(e) => setRepoUrl(e.target.value)}
-                  className="w-full h-11 px-4 text-xs font-sans bg-transparent border border-white/10 rounded-full focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all"
-                />
-              </div>
-            ) : (
-              <div>
-                <span className="text-[10px] text-slate-500 font-sans uppercase tracking-wider block mb-2 text-left ml-3">
-                  Route paths to scan (one path per line)
-                </span>
-                <textarea
-                  placeholder="e.g.&#10;/&#10;/dashboard&#10;/dashboard/settings&#10;/billing"
-                  value={sitemapText}
-                  onChange={(e) => setSitemapText(e.target.value)}
-                  className="w-full h-32 px-4 py-3 text-xs font-sans bg-transparent border border-white/10 rounded-2xl focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all resize-y min-h-[100px]"
-                />
-              </div>
-            )}
-
-            <div>
-              <input
-                type="password"
-                placeholder="Pendo key · Novus: clientId:clientSecret · or type 'demo'"
-                value={pendoKey}
-                onChange={(e) => setPendoKey(e.target.value)}
-                className="w-full h-11 px-4 text-xs font-sans bg-transparent border border-white/10 rounded-full focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all"
-              />
-            </div>
-
-            {inputMode === 'github' && (
-              <div>
-                <input
-                  type="password"
-                  placeholder="GitHub personal access token (optional — for private repos)"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  className="w-full h-11 px-4 text-xs font-sans bg-transparent border border-white/10 rounded-full focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all"
-                />
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                type="submit"
-                className="flex-1 h-11 bg-white text-[#030307] font-sans text-xs font-semibold rounded-full hover:bg-white/90 active:scale-[0.99] transition-all cursor-pointer shadow-md"
-              >
-                Analyze drift →
-              </button>
-              <button
-                type="button"
-                onClick={handleRunJudgeDemo}
-                className="flex-1 h-11 bg-transparent text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/5 font-sans text-xs font-semibold rounded-full active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                ⚡ Run Judge Demo
-              </button>
-            </div>
-            
-            {error && (
-              <div className="text-red-untracked text-xs font-sans text-center mt-2 max-w-sm mx-auto">
-                {error}
-              </div>
-            )}
-
-            <div className="text-center space-y-2 mt-6">
-              <p className="text-[10px] text-slate-500 font-sans">
-                Your Pendo key is never stored. All API calls are server-side.
-              </p>
-              <p className="text-[10px] font-sans">
-                <button
-                  type="button"
-                  onClick={handleDemoClick}
-                  className="text-slate-400 hover:text-white underline transition-colors bg-transparent border-none cursor-pointer p-0"
-                >
-                  → Try demo mode
-                </button>
-              </p>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Collapsed Repository Header */}
-      {analysisCompleted && (
-        <div className="flex flex-col items-center justify-center w-full max-w-[560px] mx-auto p-5 border border-white/5 bg-white/[0.01] rounded-3xl backdrop-blur-md shadow-xl">
-          <div className="flex justify-between items-center w-full">
-            <div className="flex flex-col text-left">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">
-                Analyzing Repository
-              </span>
-              <span className="text-xs md:text-sm font-mono text-primary break-all mt-0.5">
-                {repoUrl}
-              </span>
-            </div>
+        ) : (
+          <div className="flex bg-white/[0.02] border border-white/5 rounded-full p-0.5 font-sans text-[10px] w-full mb-3">
             <button
-              onClick={resetForm}
-              className="text-[10px] font-sans font-semibold text-slate-300 border border-white/10 px-3.5 py-1.5 rounded-full hover:bg-white/5 transition-all hover:text-primary cursor-pointer"
+              type="button"
+              onClick={() => setInputMode('github')}
+              className={`flex-1 py-1 text-center rounded-full font-medium cursor-pointer transition-all duration-300 ${
+                inputMode === 'github'
+                  ? 'bg-white/10 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
-              Change repo
+              🔍 GitHub
+            </button>
+            <button
+              type="button"
+              onClick={() => setInputMode('sitemap')}
+              className={`flex-1 py-1 text-center rounded-full font-medium cursor-pointer transition-all duration-300 ${
+                inputMode === 'sitemap'
+                  ? 'bg-white/10 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              📝 Sitemap
             </button>
           </div>
-        </div>
-      )}
+        ))}
 
-      {/* Monospace terminal loading animation */}
-      {isLoading && (
-        <div className="w-full max-w-[560px] mx-auto glass-panel p-6 rounded-3xl font-mono text-[11px] space-y-2 select-none text-left shadow-2xl relative overflow-hidden animate-fade-in border border-white/5">
-          <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_#f59e0b]" />
-              <span className="text-[10px] text-slate-400 font-sans tracking-wide uppercase">Telemetry Scan In Progress</span>
+        {inputMode === 'github' ? (
+          <div>
+            <input
+              type="text"
+              placeholder="GitHub repo URL (e.g. github.com/owner/repo)"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+              className={`w-full px-4 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
+                isSidebar ? 'h-9 rounded-xl' : 'h-11 rounded-full'
+              }`}
+            />
+          </div>
+        ) : (
+          <div>
+            <span className="text-[9px] text-slate-500 font-sans uppercase tracking-wider block mb-1 text-left ml-2">
+              Route paths to scan (one path per line)
+            </span>
+            <textarea
+              placeholder="e.g.&#10;/&#10;/dashboard&#10;/dashboard/settings&#10;/billing"
+              value={sitemapText}
+              onChange={(e) => setSitemapText(e.target.value)}
+              className={`w-full px-4 py-3 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all resize-y ${
+                isSidebar ? 'h-24 rounded-xl min-h-[80px]' : 'h-32 rounded-2xl min-h-[100px]'
+              }`}
+            />
+          </div>
+        )}
+
+        <div>
+          <input
+            type="password"
+            placeholder="Pendo key · Novus key · or type 'demo'"
+            value={pendoKey}
+            onChange={(e) => setPendoKey(e.target.value)}
+            className={`w-full px-4 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
+              isSidebar ? 'h-9 rounded-xl' : 'h-11 rounded-full'
+            }`}
+          />
+        </div>
+
+        {inputMode === 'github' && (
+          <div>
+            <input
+              type="password"
+              placeholder="GitHub personal access token (optional)"
+              value={githubToken}
+              onChange={(e) => setGithubToken(e.target.value)}
+              className={`w-full px-4 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
+                isSidebar ? 'h-9 rounded-xl' : 'h-11 rounded-full'
+              }`}
+            />
+          </div>
+        )}
+
+        <div className={`flex gap-3 pt-2 ${isSidebar ? 'flex-col' : 'flex-row'}`}>
+          <button
+            type="submit"
+            className={`flex-1 bg-white text-[#030307] font-sans text-xs font-semibold rounded-full hover:bg-white/90 active:scale-[0.99] transition-all cursor-pointer shadow-md ${
+              isSidebar ? 'h-9' : 'h-11'
+            }`}
+          >
+            Analyze drift →
+          </button>
+          <button
+            type="button"
+            onClick={handleRunJudgeDemo}
+            className={`flex-1 bg-transparent text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/5 font-sans text-xs font-semibold rounded-full active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              isSidebar ? 'h-9' : 'h-11'
+            }`}
+          >
+            ⚡ Run Judge Demo
+          </button>
+        </div>
+        
+        {error && (
+          <div className="text-red-untracked text-xs font-sans text-center mt-2 max-w-sm mx-auto">
+            {error}
+          </div>
+        )}
+
+        {!isSidebar && (
+          <div className="text-center space-y-2 mt-6">
+            <p className="text-[10px] text-slate-500 font-sans">
+              Your Pendo key is never stored. All API calls are server-side.
+            </p>
+            <p className="text-[10px] font-sans">
+              <button
+                type="button"
+                onClick={handleDemoClick}
+                className="text-slate-400 hover:text-white underline transition-colors bg-transparent border-none cursor-pointer p-0"
+              >
+                → Try demo mode
+              </button>
+            </p>
+          </div>
+        )}
+      </form>
+    );
+  };
+
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-start bg-[#030307] text-primary px-4 py-8 selection:bg-[#222] w-full">
+      {!analysisCompleted ? (
+        <div className="w-full flex flex-col items-center justify-center max-w-3xl mx-auto space-y-8 my-8">
+          {/* Hero Section */}
+          <div className="flex flex-col items-center justify-center text-center w-full max-w-3xl relative">
+            <h1 className="text-4xl md:text-5xl font-heading tracking-tight font-extrabold text-white mb-4 leading-[1.1] max-w-3xl">
+              Is your product <span className="bg-gradient-to-r from-slate-200 to-slate-400 bg-clip-text text-transparent">flying blind?</span>
+            </h1>
+            
+            <p className="text-xs md:text-sm text-slate-400 max-w-md font-sans leading-relaxed mb-6">
+              Compare your codebase pages against Pendo analytics in real-time. Detect tracking drift, validate user funnels, and auto-generate telemetry fixes.
+            </p>
+
+            {/* Interactive Telemetry Orb Mesh Globe */}
+            <div className="w-full max-w-2xl mx-auto my-2">
+              <HeroVisual />
             </div>
-            <span className="text-[9px] text-slate-500 font-sans">Node ID: 82p-178</span>
           </div>
-          <div className="space-y-1.5">
-            {activeTerminalLines.slice(0, loadingStep).map((line, index) => {
-              const isLast = index === loadingStep - 1;
-              const isSuccessLine = line.startsWith('✓');
-              return (
-                <div
-                  key={index}
-                  className={`${
-                    isSuccessLine 
-                      ? 'text-green-covered' 
-                      : 'text-secondary/80'
-                  } ${isLast ? 'blink-cursor-solid font-semibold text-primary' : ''}`}
-                >
-                  {line}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
-      {/* Results view — sidebar dashboard layout */}
-      {result && analysisCompleted && (
-        <div ref={resultsRef} id="results-section" className="w-full max-w-6xl mt-12 flex rounded-2xl border border-white/[0.07] overflow-hidden shadow-2xl min-h-[80vh]">
+          {/* Past Analyses History */}
+          {!isLoading && history.length > 0 && (
+            <div className="w-full max-w-[480px] mx-auto animate-fade-in">
+              <p className="text-[10px] text-white/25 font-sans uppercase tracking-widest mb-2 text-center">Past analyses</p>
+              <div className="flex flex-col gap-1">
+                {history.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => {
+                      setResult(entry.result);
+                      setRepoUrl(entry.repoUrl);
+                      setAnalysisCompleted(true);
+                      setShowDemoBanner(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.04] hover:border-white/10 transition-all text-left group"
+                  >
+                    <span className="text-[10px] text-white/55 font-mono truncate max-w-[260px] group-hover:text-white/80 transition-colors">
+                      {entry.repoUrl}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                        entry.grade === 'A' ? 'text-green-400/80 bg-green-400/10' :
+                        entry.grade === 'B' || entry.grade === 'C' ? 'text-amber-400/80 bg-amber-400/10' :
+                        'text-red-400/80 bg-red-400/10'
+                      }`}>{entry.grade}</span>
+                      <span className="text-[9px] text-white/25">{entry.score}%</span>
+                      <span className="text-[9px] text-white/20">{new Date(entry.date).toLocaleDateString()}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Monospace terminal loading animation */}
+          {isLoading && (
+            <div className="w-full max-w-[560px] mx-auto glass-panel p-6 rounded-3xl font-mono text-[11px] space-y-2 select-none text-left shadow-2xl relative overflow-hidden animate-fade-in border border-white/5">
+              <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_#f59e0b]" />
+                  <span className="text-[10px] text-slate-400 font-sans tracking-wide uppercase">Telemetry Scan In Progress</span>
+                </div>
+                <span className="text-[9px] text-slate-500 font-sans">Node ID: 82p-178</span>
+              </div>
+              <div className="space-y-1.5">
+                {activeTerminalLines.slice(0, loadingStep).map((line, index) => {
+                  const isLast = index === loadingStep - 1;
+                  const isSuccessLine = line.startsWith('✓');
+                  return (
+                    <div
+                      key={index}
+                      className={`${
+                        isSuccessLine 
+                          ? 'text-green-covered' 
+                          : 'text-secondary/80'
+                      } ${isLast ? 'blink-cursor-solid font-semibold text-primary' : ''}`}
+                    >
+                      {line}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Input form */}
+          {!isLoading && (
+            <div className="space-y-4 w-full max-w-[480px] mx-auto z-10">
+              {renderScanForm(false)}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Results view — sidebar dashboard layout */
+        result && (
+          <div ref={resultsRef} id="results-section" className="w-full max-w-[1400px] flex rounded-2xl border border-white/[0.07] overflow-hidden shadow-2xl min-h-[85vh] bg-[#07070d] animate-fade-in">
 
           {/* ── LEFT SIDEBAR ─────────────────────────────────────────── */}
           <aside className="w-[220px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col">
@@ -2627,6 +2664,15 @@ jobs:
           </div> {/* Close Tab content wrapper */}
         </div> {/* Close Right Main Content panel */}
 
+        {/* ── RIGHT SCANNER SIDEBAR ────────────────────────────────── */}
+        <aside className="w-[320px] shrink-0 bg-[#0a0a0f] border-l border-white/[0.06] flex flex-col p-5 overflow-y-auto space-y-6">
+          <div className="border-b border-white/[0.06] pb-3 shrink-0">
+            <h3 className="font-mono text-xs font-bold text-primary">🔍 Scan Another Repo</h3>
+            <p className="text-[9px] font-mono text-secondary mt-0.5">Trigger a new drift analysis or simulator event</p>
+          </div>
+          {renderScanForm(true)}
+        </aside>
+
           {/* Floating Share Button */}
           <div className="fixed bottom-6 right-6 z-40">
             <button
@@ -2640,7 +2686,8 @@ jobs:
             </button>
           </div>
         </div>
-      )}
+      )
+    )}
 
       {/* Floating Keyboard Shortcuts Legend */}
       {analysisCompleted && showShortcutsLegend && (
