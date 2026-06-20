@@ -30,13 +30,13 @@ We have built, polished, and successfully compiled **Drift Report**—a producti
      - `Esc`: Dismiss the shortcut legend panel.
    - Displayed a floating keyboard map legend widget at the bottom-left of the viewport.
 
-5. **Results Dashboard Sidebar Layout** 📊:
-   - Converted the stacked results tabs layout into a premium side-by-side dashboard layout with a left navigation sidebar containing:
-     - **Dashboard & Audit** 📊
-     - **Fix Kit Playground** 🛠️
-     - **CI/CD Guardrails** 🛡️
-   - The right panel displays the active tab content with a top action/status header, responsive scrolling, and clean padding.
-   - Built a copy-pasteable GitHub Actions workflow YAML block in the CI/CD tab to run telemetry scans on PRs.
+5. **Results Dashboard Three-Column Layout** 📊:
+   - Separated the landing/hero page and results dashboard into independent views controlled by `analysisCompleted` state to eliminate page clutter.
+   - Converted the results view into a premium three-column dashboard layout:
+     - **Left Navigation Sidebar**: Renders the repository name, Drift Score radial gauge, and active tab buttons (📊 Dashboard, 🛠️ Fix Kit, 🛡️ CI/CD).
+     - **Middle Content Panel**: Renders the active tab details (audits, code snippets, or workflows) with scrolling viewports and comfortable padding.
+     - **Right Scanner Sidebar**: Hosts the compact GitHub repository / Sitemap scanning forms and the "Run Judge Demo" button so users can run new audits directly from their dashboard.
+   - Enabled robust Base64 sharing links using `TextEncoder` and `TextDecoder` to handle Unicode characters (like em-dashes and emojis) safely.
 
 6. **Flat Triage Grid & Severity Engine** 🚨:
    - Implemented a toggle button between the original grouped folder list and a flat **Triage Grid** sorted by Severity (Critical, High, Medium, Low).
