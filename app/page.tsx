@@ -1466,7 +1466,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             </nav>
 
             {/* Sidebar footer actions */}
-            <div className="px-2.5 py-2.5 border-t border-white/[0.06] space-y-0.5 shrink-0">
+            <div className="px-2.5 py-2 border-t border-white/[0.06] space-y-0.5 shrink-0">
               <button
                 type="button"
                 onClick={handleShare}
@@ -1483,20 +1483,17 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                 <span className="text-xs">📋</span>
                 <span className="text-[9px] font-sans">{copiedReport ? 'Copied ✓' : 'Export report'}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => { resetForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
-              >
-                <span className="text-xs">↩</span>
-                <span className="text-[9px] font-sans">New analysis</span>
-              </button>
             </div>
 
-            {/* ── Sidebar Scan Form ──────────────────────────────── */}
+            {/* ── Sidebar New Scan Action ──────────────────────────────── */}
             <div className="px-2.5 pb-3 border-t border-white/[0.06] pt-2.5 shrink-0">
-              <p className="text-[8px] text-white/25 font-sans uppercase tracking-widest mb-1.5">New Scan</p>
-              {renderScanForm(true)}
+              <button
+                type="button"
+                onClick={resetForm}
+                className="w-full py-2 bg-primary text-background font-mono text-[10px] font-bold rounded-md hover:bg-opacity-90 active:scale-[0.98] transition-all border border-border cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                🔍 New Scan
+              </button>
             </div>
           </aside>
 
@@ -1525,7 +1522,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                 <button
                   type="button"
                   onClick={() => setIsChromeHudOpen(true)}
-                  className="text-[9px] font-mono text-amber-400/70 border border-amber-400/20 px-2.5 py-1 rounded-full hover:bg-amber-400/5 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-background font-mono text-[10px] font-bold rounded-md hover:bg-opacity-90 active:scale-[0.98] transition-all border border-border cursor-pointer shadow-md"
                 >
                   ⚡ HUD
                 </button>
@@ -1648,35 +1645,35 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
             {/* Right Column: Stats */}
             <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="border border-border p-4 bg-surface rounded-md flex flex-col justify-between min-h-[110px]">
-                <span className="text-[10px] font-mono text-tertiary uppercase tracking-wider">
+              <div className="border border-border p-3 bg-surface rounded-md flex flex-col gap-1 justify-start">
+                <span className="text-[9px] font-mono text-tertiary uppercase tracking-wider">
                   Total Routes
                 </span>
-                <span className="text-3xl font-mono font-bold text-primary">
+                <span className="text-2xl font-mono font-bold text-primary leading-none">
                   {result.totalRoutes}
                 </span>
               </div>
-              <div className="border border-border p-4 bg-surface rounded-md flex flex-col justify-between min-h-[110px]">
-                <span className="text-[10px] font-mono text-tertiary uppercase tracking-wider">
+              <div className="border border-border p-3 bg-surface rounded-md flex flex-col gap-1 justify-start">
+                <span className="text-[9px] font-mono text-tertiary uppercase tracking-wider">
                   Covered
                 </span>
-                <span className="text-3xl font-mono font-bold text-green-covered">
+                <span className="text-2xl font-mono font-bold text-green-covered leading-none">
                   {result.coveredCount}
                 </span>
               </div>
-              <div className="border border-border p-4 bg-surface rounded-md flex flex-col justify-between min-h-[110px]">
-                <span className="text-[10px] font-mono text-tertiary uppercase tracking-wider">
+              <div className="border border-border p-3 bg-surface rounded-md flex flex-col gap-1 justify-start">
+                <span className="text-[9px] font-mono text-tertiary uppercase tracking-wider">
                   Partial
                 </span>
-                <span className="text-3xl font-mono font-bold text-amber-partial">
+                <span className="text-2xl font-mono font-bold text-amber-partial leading-none">
                   {result.partialCount}
                 </span>
               </div>
-              <div className="border border-border p-4 bg-surface rounded-md flex flex-col justify-between min-h-[110px]">
-                <span className="text-[10px] font-mono text-tertiary uppercase tracking-wider">
+              <div className="border border-border p-3 bg-surface rounded-md flex flex-col gap-1 justify-start">
+                <span className="text-[9px] font-mono text-tertiary uppercase tracking-wider">
                   Untracked
                 </span>
-                <span className="text-3xl font-mono font-bold text-red-untracked">
+                <span className="text-2xl font-mono font-bold text-red-untracked leading-none">
                   {result.untrackedCount}
                 </span>
               </div>
