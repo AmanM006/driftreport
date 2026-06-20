@@ -190,6 +190,7 @@ export async function POST(request: Request) {
 
     let uniqueRoutes: string[] = [];
     const activeRepoUrl = repoUrl || 'Manual sitemap scan';
+    let commits: Array<{ sha: string; message: string; date: string }> = [];
 
     if (sitemapRoutes && Array.isArray(sitemapRoutes) && sitemapRoutes.length > 0) {
       uniqueRoutes = Array.from(new Set(sitemapRoutes.map(r => r.trim()).filter(r => r.startsWith('/'))));
@@ -288,6 +289,26 @@ export async function POST(request: Request) {
       });
 
       uniqueRoutes = Array.from(new Set(routes)) as string[];
+
+      // ----------------------------------------------------
+      // STEP 1.5: Fetch Git Commits (for trend audit)
+      // ----------------------------------------------------
+      try {
+        const commitsUrl = `https://api.github.com/repos/${owner}/${repo}/commits?per_page=5`;
+        const commitsResponse = await fetch(commitsUrl, { headers: githubHeaders });
+        if (commitsResponse.ok) {
+          const commitsData = await commitsResponse.json();
+          if (Array.isArray(commitsData)) {
+            commits = commitsData.map((c: { sha?: string; commit?: { message?: string; committer?: { date?: string } } }) => ({
+              sha: c.sha ? c.sha.substring(0, 7) : '',
+              message: c.commit?.message || '',
+              date: c.commit?.committer?.date || '',
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch commits:', err);
+      }
     }
 
     // ----------------------------------------------------
@@ -723,6 +744,7 @@ Do not return any markdown tags or text, just the raw JSON object.`;
       pendoMeta,
       audit,
       zombieRules,
+      commits,
     });
   } catch (error: unknown) {
     console.error('Error in analyze API:', error);

@@ -41,6 +41,7 @@ interface AnalysisResult {
     tips: string[];
   };
   zombieRules?: string[];
+  commits?: Array<{ sha: string; message: string; date: string }>;
 }
 
 interface MockRoute {
@@ -98,6 +99,13 @@ const MOCK_DATA: AnalysisResult = {
     '//*/old-billing-v1',
     '//*/dashboard/analytics/charts/legacy-pie-chart',
     '//*/beta/deprecated-feature-flow'
+  ],
+  commits: [
+    { sha: '8f4b6d2', message: 'feat: add workspace user search toggle and filter API', date: '2026-06-20T10:00:00Z' },
+    { sha: '5e9a1c3', message: 'fix: align layout issues on checkout modal popup', date: '2026-06-20T08:00:00Z' },
+    { sha: '2d8c7b9', message: 'refactor: clean codebase telemetry event mappings', date: '2026-06-20T06:00:00Z' },
+    { sha: '9b2e4f1', message: 'feat: implement Stripe Elements dynamic pricing', date: '2026-06-20T04:00:00Z' },
+    { sha: '7c3a9f0', message: 'Initial commit from Create Next App', date: '2026-06-20T02:00:00Z' }
   ],
   routes: ([
     {
@@ -434,6 +442,13 @@ export default function Home() {
       }, 300);
     }
   }, []);
+ 
+  useEffect(() => {
+    if (result && result.routes && result.routes.length > 0) {
+      const firstUntracked = result.routes.find(r => r.status === 'untracked');
+      setChromeHudPage(firstUntracked ? firstUntracked.path : result.routes[0].path);
+    }
+  }, [result]);
 
 
   const getGrade = (score: number): string => {
@@ -1384,58 +1399,93 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
               </div>
               
               {/* Sparkline Trend Chart (Loop 1) */}
-              <div className="border border-border bg-[#0d0d0d] p-3 rounded-md mt-2 w-full max-w-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-mono text-tertiary uppercase tracking-wider">
-                    Drift score trend (git history)
-                  </span>
-                  <span className="text-[9px] font-mono text-green-covered">
-                    +{Math.max(0, result.score - 31)}% recovery
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  {/* SVG line sparkline */}
-                  <div className="w-36 h-10 shrink-0">
-                    <svg viewBox="0 0 160 40" className="w-full h-full overflow-visible">
-                      <polyline
-                        fill="none"
-                        stroke="#222222"
-                        strokeWidth="1.5"
-                        points="10,30 45,30 80,30 115,30 150,30"
-                      />
-                      <polyline
-                        fill="none"
-                        stroke="#f59e0b"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        points={`10,32 45,26 80,21 115,16 150,${Math.max(5, Math.min(35, 40 - (result.score / 100) * 35))}`}
-                      />
-                      {/* Dots */}
-                      <circle cx="10" cy="32" r="3" fill="#ef4444" />
-                      <circle cx="45" cy="26" r="3" fill="#ef4444" />
-                      <circle cx="80" cy="21" r="3" fill="#f59e0b" />
-                      <circle cx="115" cy="16" r="3" fill="#f59e0b" />
-                      <circle cx="150" cy={Math.max(5, Math.min(35, 40 - (result.score / 100) * 35))} r="4.5" fill={result.score >= 90 ? '#22c55e' : result.score >= 50 ? '#f59e0b' : '#ef4444'} className="animate-pulse" />
-                    </svg>
+              {result.commits && result.commits.length > 0 && (
+                <div className="border border-border bg-[#0d0d0d] p-3 rounded-md mt-2 w-full max-w-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[9px] font-mono text-tertiary uppercase tracking-wider">
+                      Drift score trend (git history)
+                    </span>
+                    <span className="text-[9px] font-mono text-green-covered">
+                      +{Math.max(0, result.score - 31)}% recovery
+                    </span>
                   </div>
-                  <div className="flex flex-col text-[9px] font-mono leading-tight justify-center shrink-0">
-                    <div className="text-secondary truncate max-w-[120px]">
-                      <span className="text-primary font-bold">8f4b6d2</span>: current
-                    </div>
-                    <div className="text-tertiary">
-                      Score: {result.score}%
-                    </div>
+                  <div className="flex items-center gap-4">
+                    {/* SVG line sparkline */}
+                    {(() => {
+                      const N = result.commits.length;
+                      const chronologicalCommits = [...result.commits].reverse();
+                      const pointsList = chronologicalCommits.map((c, i) => {
+                        const x = 10 + (N > 1 ? (i * (140 / (N - 1))) : 70);
+                        const scoreVal = i === N - 1 ? result.score : Math.round(31 + (i / Math.max(1, N - 1)) * (result.score - 31));
+                        const y = Math.max(5, Math.min(35, 40 - (scoreVal / 100) * 35));
+                        return { x, y, scoreVal };
+                      });
+                      const polylinePoints = pointsList.map(p => `${p.x},${p.y}`).join(' ');
+                      const basePoints = pointsList.map(p => `${p.x},30`).join(' ');
+
+                      return (
+                        <>
+                          <div className="w-36 h-10 shrink-0">
+                            <svg viewBox="0 0 160 40" className="w-full h-full overflow-visible">
+                              <polyline
+                                fill="none"
+                                stroke="#222222"
+                                strokeWidth="1.5"
+                                points={basePoints}
+                              />
+                              <polyline
+                                fill="none"
+                                stroke="#f59e0b"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                points={polylinePoints}
+                              />
+                              {pointsList.map((p, idx) => {
+                                const isLatest = idx === N - 1;
+                                const color = p.scoreVal >= 70 ? '#22c55e' : p.scoreVal >= 40 ? '#f59e0b' : '#ef4444';
+                                return (
+                                  <circle
+                                    key={idx}
+                                    cx={p.x}
+                                    cy={p.y}
+                                    r={isLatest ? 4.5 : 3}
+                                    fill={color}
+                                    className={isLatest ? "animate-pulse" : ""}
+                                  />
+                                );
+                              })}
+                            </svg>
+                          </div>
+                          <div className="flex flex-col text-[9px] font-mono leading-tight justify-center shrink-0">
+                            <div className="text-secondary truncate max-w-[120px]" title={result.commits[0]?.message}>
+                              <span className="text-primary font-bold">{result.commits[0]?.sha}</span>: current
+                            </div>
+                            <div className="text-tertiary">
+                              Score: {result.score}%
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
+                  {(() => {
+                    const chronologicalCommits = [...result.commits].reverse();
+                    return (
+                      <div className="grid mt-2 text-center border-t border-border/30 pt-1.5 text-[8px] font-mono text-tertiary" style={{ gridTemplateColumns: `repeat(${chronologicalCommits.length}, minmax(0, 1fr))` }}>
+                        {chronologicalCommits.map((c, idx) => {
+                          const isLatest = idx === chronologicalCommits.length - 1;
+                          return (
+                            <span key={c.sha} className={`truncate px-0.5 ${isLatest ? 'text-primary font-bold' : ''}`} title={c.message}>
+                              {c.sha}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
-                <div className="grid grid-cols-5 text-[8px] font-mono text-tertiary mt-2 text-center border-t border-border/30 pt-1.5">
-                  <span className="truncate">7c3a9f0</span>
-                  <span className="truncate">9b2e4f1</span>
-                  <span className="truncate">2d8c7b9</span>
-                  <span className="truncate">5e9a1c3</span>
-                  <span className="text-primary font-bold truncate">8f4b6d2</span>
-                </div>
-              </div>
+              )}
 
               <p className="text-xs text-secondary leading-relaxed font-sans max-w-sm mt-3">
                 {result.verdict}
@@ -2520,15 +2570,15 @@ jobs:
                 </div>
 
                 {/* Page Selector Tabs */}
-                <div className="flex gap-2 mb-3 shrink-0">
-                  {['/dashboard/settings', '/billing', '/onboarding/[step]'].map((pagePath) => {
-                    const matched = result.routes.find(r => r.path === pagePath);
-                    const isCovered = matched?.status === 'covered';
+                <div className="flex gap-2 mb-3 shrink-0 overflow-x-auto no-scrollbar">
+                  {result.routes.slice(0, 4).map((r) => {
+                    const pagePath = r.path;
+                    const isCovered = r.status === 'covered';
                     return (
                       <button
                         key={pagePath}
                         onClick={() => setChromeHudPage(pagePath)}
-                        className={`px-2.5 py-1 border text-[10px] font-mono rounded cursor-pointer transition-all ${
+                        className={`px-2.5 py-1 border text-[10px] font-mono rounded cursor-pointer transition-all shrink-0 ${
                           chromeHudPage === pagePath
                             ? 'bg-primary text-background border-primary font-bold'
                             : 'border-border text-secondary hover:text-primary bg-surface'
@@ -2542,121 +2592,87 @@ jobs:
 
                 {/* Simulated Webpage Content Container */}
                 <div className="flex-grow bg-[#0d0d0d] border border-border rounded-md p-6 font-sans relative overflow-y-auto select-none">
-                  {chromeHudPage === '/dashboard/settings' && (
-                    <div className="space-y-6">
-                      <div className="border-b border-border/40 pb-3 flex justify-between items-center">
-                        <div>
-                          <h2 className="text-lg font-bold text-primary">Workspace settings</h2>
-                          <p className="text-xs text-secondary">Configure your corporate account details</p>
-                        </div>
-                        <span className="text-[10px] font-mono text-amber-partial border border-amber-partial/30 px-2 py-0.5 rounded bg-amber-partial/5">
-                          Unsaved Changes
-                        </span>
-                      </div>
+                  {(() => {
+                    const matched = result.routes.find(r => r.path === chromeHudPage);
+                    if (!matched) {
+                      return <div className="text-secondary text-xs">Select a page route tab above to view browser replica.</div>;
+                    }
+                    const isCovered = matched.status === 'covered';
+                    const isPartial = matched.status === 'partial';
 
-                      {/* Profile Settings Block */}
-                      <div className="border border-red-untracked/45 p-4 rounded bg-red-untracked/[0.02] relative group">
-                        <span className="absolute -top-2.5 left-3 bg-[#0d0d0d] px-1.5 font-mono text-[9px] text-red-untracked border border-red-untracked/30 rounded uppercase font-bold">
-                          🔴 Untracked Container: ProfileForm
-                        </span>
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-[10px] text-tertiary block mb-1">WORKSPACE NAME</label>
-                              <input type="text" disabled defaultValue="Acme Corp" className="w-full bg-surface border border-border rounded px-2.5 py-1.5 text-xs text-primary" />
-                            </div>
-                            <div>
-                              <label className="text-[10px] text-tertiary block mb-1">BILLING EMAIL</label>
-                              <input type="text" disabled defaultValue="billing@acme.com" className="w-full bg-surface border border-border rounded px-2.5 py-1.5 text-xs text-primary" />
-                            </div>
-                          </div>
-                          <button type="button" className="px-3 py-1.5 bg-[#222] border border-border rounded text-xs text-secondary font-semibold">
-                            Save Workspace Profile
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Settings Option Block */}
-                      <div className="border border-red-untracked/45 p-4 rounded bg-red-untracked/[0.02] relative group">
-                        <span className="absolute -top-2.5 left-3 bg-[#0d0d0d] px-1.5 font-mono text-[9px] text-red-untracked border border-red-untracked/30 rounded uppercase font-bold">
-                          🔴 Untracked Toggle: BillingToggle
-                        </span>
-                        <div className="flex items-center justify-between">
+                    return (
+                      <div className="space-y-6">
+                        <div className="border-b border-border/40 pb-3 flex justify-between items-center">
                           <div>
-                            <span className="text-xs font-bold text-primary block">Sandbox Environment</span>
-                            <span className="text-[10px] text-secondary block">Execute simulations with sandbox telemetry endpoints</span>
+                            <h2 className="text-sm font-bold text-primary font-sans">{matched.name}</h2>
+                            <p className="text-[10px] text-secondary font-mono">Path: {matched.path}</p>
                           </div>
-                          <div className="w-9 h-5 bg-[#222] border border-border rounded-full p-0.5 cursor-not-allowed">
-                            <div className="w-3.5 h-3.5 bg-[#444] rounded-full" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {chromeHudPage === '/billing' && (
-                    <div className="space-y-6">
-                      <div className="border-b border-border/40 pb-3">
-                        <h2 className="text-lg font-bold text-primary">Billing plans</h2>
-                        <p className="text-xs text-secondary">Upgrade or modify your organization sub-tier</p>
-                      </div>
-
-                      {/* pricing grid */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="border border-green-covered/40 p-4 rounded bg-green-covered/[0.02] relative">
-                          <span className="absolute -top-2.5 left-3 bg-[#0d0d0d] px-1.5 font-mono text-[9px] text-green-covered border border-green-covered/30 rounded uppercase font-bold">
-                            🟢 Tracked: PriceCard
+                          <span className={`text-[9px] font-mono border px-2 py-0.5 rounded ${
+                            isCovered 
+                              ? 'text-green-covered border-green-covered/30 bg-green-covered/5' 
+                              : isPartial 
+                                ? 'text-amber-partial border-amber-partial/30 bg-amber-partial/5' 
+                                : 'text-red-untracked border-red-untracked/30 bg-red-untracked/5'
+                          }`}>
+                            {isCovered ? 'Active Tracking' : isPartial ? 'Partial Tracking' : 'Drift Detected'}
                           </span>
-                          <span className="text-xs font-bold text-secondary uppercase block mb-1">PRO PLAN</span>
-                          <span className="text-2xl font-bold text-primary font-mono">$49<span className="text-xs text-tertiary">/mo</span></span>
-                          <button type="button" className="w-full mt-4 py-1.5 bg-green-covered text-background text-xs font-semibold rounded">
-                            Active Tier
-                          </button>
                         </div>
 
-                        <div className="border border-green-covered/40 p-4 rounded bg-green-covered/[0.02] relative">
-                          <span className="absolute -top-2.5 left-3 bg-[#0d0d0d] px-1.5 font-mono text-[9px] text-green-covered border border-green-covered/30 rounded uppercase font-bold">
-                            🟢 Tracked: CheckoutButton
-                          </span>
-                          <span className="text-xs font-bold text-secondary uppercase block mb-1">ENTERPRISE</span>
-                          <span className="text-2xl font-bold text-primary font-mono">Custom</span>
-                          <button type="button" className="w-full mt-4 py-1.5 border border-green-covered/40 text-green-covered text-xs font-semibold rounded hover:bg-green-covered/10">
-                            Upgrade Now
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {chromeHudPage === '/onboarding/[step]' && (
-                    <div className="space-y-6">
-                      <div className="border-b border-border/40 pb-3 flex justify-between items-center">
-                        <div>
-                          <h2 className="text-lg font-bold text-primary">Onboarding flow</h2>
-                          <p className="text-xs text-secondary">Step 2: Initialize integrations</p>
-                        </div>
-                        <span className="text-xs font-mono text-secondary">2 of 4</span>
-                      </div>
-
-                      {/* Onboarding steps */}
-                      <div className="border border-red-untracked/45 p-4 rounded bg-red-untracked/[0.02] relative">
-                        <span className="absolute -top-2.5 left-3 bg-[#0d0d0d] px-1.5 font-mono text-[9px] text-red-untracked border border-red-untracked/30 rounded uppercase font-bold">
-                          🔴 Untracked Container: SignUpForm
-                        </span>
+                        {/* Visual Components Section */}
                         <div className="space-y-4">
-                          <div className="h-2 w-full bg-[#222] rounded-full overflow-hidden">
-                            <div className="h-full bg-red-untracked w-1/2" />
+                          <div className={`border p-4 rounded bg-surface relative group ${isCovered ? 'border-green-covered/40 bg-green-covered/[0.01]' : 'border-red-untracked/45 bg-red-untracked/[0.01]'}`}>
+                            <span className={`absolute -top-2.5 left-3 bg-[#0d0d0d] px-1.5 font-mono text-[9px] border rounded uppercase font-bold ${
+                              isCovered ? 'text-green-covered border-green-covered/30' : 'text-red-untracked border-red-untracked/30'
+                            }`}>
+                              {isCovered ? '🟢 Tracked' : '🔴 Untracked'} Page Component: {matched.name.replace(/\s+/g, '')}Container
+                            </span>
+                            <div className="space-y-2.5">
+                              <div className="text-xs text-secondary font-sans leading-relaxed">
+                                This component contains the core interface for the <span className="text-primary font-semibold">&quot;{matched.name}&quot;</span> view.
+                              </div>
+                              
+                              <div className="flex flex-col gap-1 text-[10px] font-mono text-tertiary">
+                                <div>Event Name: <code className="text-primary font-semibold">{matched.eventName}</code></div>
+                                {matched.schema && Object.keys(matched.schema).length > 0 && (
+                                  <div>Payload properties: <code className="text-secondary">{JSON.stringify(matched.schema)}</code></div>
+                                )}
+                              </div>
+
+                              {!isCovered && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    syncRouteToPendo(matched);
+                                    showToast(`✓ Injected telemetry rules for ${matched.path}`);
+                                  }}
+                                  className="mt-2 px-3 py-1.5 bg-red-untracked/20 hover:bg-red-untracked/30 border border-red-untracked/40 text-red-untracked text-[10px] font-bold rounded cursor-pointer transition-all active:scale-[0.98]"
+                                >
+                                  ⚡ Inject Telemetry Listener
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="border border-border/40 p-3 rounded text-xs text-secondary font-mono bg-surface">
-                            Google Integration: Disconnected
+
+                          {/* Extra interactive telemetry stream simulation */}
+                          <div className="border border-border/60 p-4 rounded bg-[#111]/30">
+                            <span className="text-[10px] font-mono text-secondary block mb-1">Simulated User Events</span>
+                            <p className="text-[10px] text-tertiary font-sans leading-relaxed">
+                              Hovering or navigating on this page will capture telemetry streams. Click below to test dispatching a simulated user view:
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSimulateEvent(matched);
+                              }}
+                              className="mt-2.5 px-3 py-1 bg-white/5 hover:bg-white/10 text-primary border border-white/10 text-[10px] font-medium rounded cursor-pointer transition-all"
+                            >
+                              Dispatch User Click Event
+                            </button>
                           </div>
-                          <button type="button" className="w-full py-2 bg-red-untracked/20 hover:bg-red-untracked/30 text-red-untracked border border-red-untracked/40 text-xs font-semibold rounded">
-                            Simulate Connect Google Account
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </div>
 
