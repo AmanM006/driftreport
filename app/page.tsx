@@ -477,6 +477,7 @@ export default function Home() {
     setLoadingStep(1); // start line 1
     setDiscoveredN(null);
     setRateLimitFallback(false);
+    window.history.pushState({}, '', '/analyze');
 
     const sitemapRoutes = inputMode === 'sitemap' ? sitemapText.split('\n').map(r => r.trim()).filter(Boolean) : undefined;
 
@@ -809,7 +810,7 @@ ${result.audit.tips.map(t => `- ${t}`).join('\n')}
     setGithubToken('');
     setLiveEvents([]);
     setSyncingIndex({});
-    window.history.pushState({}, '', window.location.pathname);
+    window.history.pushState({}, '', '/');
   };
 
   // Grouping function
