@@ -1156,7 +1156,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
 
   const renderScanForm = (isSidebar = false) => {
     return (
-      <form onSubmit={handleAnalyze} className="space-y-4 w-full">
+      <form onSubmit={handleAnalyze} className={`w-full ${isSidebar ? 'space-y-2' : 'space-y-4'}`}>
         {/* Input Mode Selector for Sidebar or Center */}
         {(!isSidebar ? (
           <div className="flex bg-white/[0.02] border border-white/5 rounded-full p-0.5 font-sans text-xs mb-6 w-full max-w-[320px] mx-auto">
@@ -1184,7 +1184,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             </button>
           </div>
         ) : (
-          <div className="flex bg-white/[0.02] border border-white/5 rounded-full p-0.5 font-sans text-[10px] w-full mb-3">
+          <div className="flex bg-white/[0.02] border border-white/5 rounded-full p-0.5 font-sans text-[10px] w-full mb-2">
             <button
               type="button"
               onClick={() => setInputMode('github')}
@@ -1214,25 +1214,27 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
           <div>
             <input
               type="text"
-              placeholder="GitHub repo URL (e.g. github.com/owner/repo)"
+              placeholder={isSidebar ? "GitHub URL (owner/repo)" : "GitHub repo URL (e.g. github.com/owner/repo)"}
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
-              className={`w-full px-4 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
-                isSidebar ? 'h-9 rounded-xl' : 'h-11 rounded-full'
+              className={`w-full text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
+                isSidebar ? 'h-8 px-3 rounded-lg text-[10px]' : 'h-11 px-4 rounded-full'
               }`}
             />
           </div>
         ) : (
           <div>
-            <span className="text-[9px] text-slate-500 font-sans uppercase tracking-wider block mb-1 text-left ml-2">
-              Route paths to scan (one path per line)
-            </span>
+            {!isSidebar && (
+              <span className="text-[9px] text-slate-500 font-sans uppercase tracking-wider block mb-1 text-left ml-2">
+                Route paths to scan (one path per line)
+              </span>
+            )}
             <textarea
-              placeholder="e.g.&#10;/&#10;/dashboard&#10;/dashboard/settings&#10;/billing"
+              placeholder={isSidebar ? "e.g. /dashboard, /billing" : "e.g.\n/\n/dashboard\n/dashboard/settings\n/billing"}
               value={sitemapText}
               onChange={(e) => setSitemapText(e.target.value)}
-              className={`w-full px-4 py-3 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all resize-y ${
-                isSidebar ? 'h-24 rounded-xl min-h-[80px]' : 'h-32 rounded-2xl min-h-[100px]'
+              className={`w-full text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
+                isSidebar ? 'h-14 px-3 py-1.5 rounded-lg text-[10px] resize-none' : 'h-32 px-4 py-3 rounded-2xl min-h-[100px] resize-y'
               }`}
             />
           </div>
@@ -1241,11 +1243,11 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
         <div>
           <input
             type="password"
-            placeholder="Pendo key · Novus key · or type 'demo'"
+            placeholder={isSidebar ? "Pendo / Novus key" : "Pendo key · Novus key · or type 'demo'"}
             value={pendoKey}
             onChange={(e) => setPendoKey(e.target.value)}
-            className={`w-full px-4 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
-              isSidebar ? 'h-9 rounded-xl' : 'h-11 rounded-full'
+            className={`w-full text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
+              isSidebar ? 'h-8 px-3 rounded-lg text-[10px]' : 'h-11 px-4 rounded-full'
             }`}
           />
         </div>
@@ -1254,38 +1256,38 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
           <div>
             <input
               type="password"
-              placeholder="GitHub personal access token (optional)"
+              placeholder={isSidebar ? "GitHub Token (optional)" : "GitHub personal access token (optional)"}
               value={githubToken}
               onChange={(e) => setGithubToken(e.target.value)}
-              className={`w-full px-4 text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
-                isSidebar ? 'h-9 rounded-xl' : 'h-11 rounded-full'
+              className={`w-full text-xs font-sans bg-transparent border border-white/10 focus:border-white/20 focus:outline-none placeholder-slate-600 transition-all ${
+                isSidebar ? 'h-8 px-3 rounded-lg text-[10px]' : 'h-11 px-4 rounded-full'
               }`}
             />
           </div>
         )}
 
-        <div className={`flex gap-3 pt-2 ${isSidebar ? 'flex-col' : 'flex-row'}`}>
+        <div className="flex gap-2 pt-1">
           <button
             type="submit"
-            className={`flex-1 bg-white text-[#030307] font-sans text-xs font-semibold rounded-full hover:bg-white/90 active:scale-[0.99] transition-all cursor-pointer shadow-md ${
-              isSidebar ? 'h-9' : 'h-11'
+            className={`flex-1 bg-white text-[#030307] font-sans font-semibold rounded-full hover:bg-white/90 active:scale-[0.99] transition-all cursor-pointer shadow-md flex items-center justify-center ${
+              isSidebar ? 'h-8 text-[10px] rounded-lg' : 'h-11 text-xs'
             }`}
           >
-            Analyze drift →
+            {isSidebar ? 'Scan' : 'Analyze drift →'}
           </button>
           <button
             type="button"
             onClick={handleRunJudgeDemo}
-            className={`flex-1 bg-transparent text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/5 font-sans text-xs font-semibold rounded-full active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-              isSidebar ? 'h-9' : 'h-11'
+            className={`flex-1 bg-transparent text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/5 font-sans font-semibold rounded-full active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              isSidebar ? 'h-8 text-[10px] rounded-lg' : 'h-11 text-xs'
             }`}
           >
-            ⚡ Run Judge Demo
+            {isSidebar ? '⚡ Demo' : '⚡ Run Judge Demo'}
           </button>
         </div>
         
         {error && (
-          <div className="text-red-untracked text-xs font-sans text-center mt-2 max-w-sm mx-auto">
+          <div className="text-red-untracked text-[10px] font-sans text-center mt-1 max-w-sm mx-auto">
             {error}
           </div>
         )}
@@ -1404,28 +1406,27 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
           <div ref={resultsRef} id="results-section" className="w-full flex-1 flex h-full overflow-hidden bg-[#07070d] animate-fade-in">
 
           {/* ── LEFT SIDEBAR ─────────────────────────────────────────── */}
-          <aside className="w-[260px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col overflow-y-auto no-scrollbar">
-
-
+          <aside className="w-[260px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col overflow-hidden select-none">
+            
             {/* Repo / brand */}
-            <div className="px-5 py-5 border-b border-white/[0.06]">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-white">D</span>
+            <div className="px-4 py-3 border-b border-white/[0.06] shrink-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center shrink-0">
+                  <span className="text-[9px] font-bold text-white">D</span>
                 </div>
-                <span className="text-[11px] font-semibold text-white font-sans tracking-tight truncate">DriftReport</span>
+                <span className="text-[10px] font-semibold text-white font-sans tracking-tight truncate">DriftReport</span>
               </div>
-              <p className="text-[9px] text-white/30 font-mono truncate pl-8">{result.repoUrl.replace('github.com/', '')}</p>
+              <p className="text-[8px] text-white/30 font-mono truncate pl-7">{result.repoUrl.replace('github.com/', '')}</p>
             </div>
 
             {/* Score pill */}
-            <div className="px-5 py-4 border-b border-white/[0.06]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[9px] text-white/30 font-sans uppercase tracking-widest">Drift Score</span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${getBadgeColor(result.grade)}`}>{result.grade}</span>
+            <div className="px-4 py-2.5 border-b border-white/[0.06] shrink-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[8px] text-white/30 font-sans uppercase tracking-widest">Drift Score</span>
+                <span className={`text-[8px] font-bold px-1 py-0.2 rounded ${getBadgeColor(result.grade)}`}>{result.grade}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
@@ -1434,12 +1435,12 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                     }}
                   />
                 </div>
-                <span className="text-[10px] font-bold text-white shrink-0">{result.score}%</span>
+                <span className="text-[9px] font-bold text-white shrink-0">{result.score}%</span>
               </div>
             </div>
 
             {/* Nav items */}
-            <nav className="flex-1 px-3 py-4 space-y-0.5">
+            <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-hidden">
               {([
                 { id: 'dashboard', label: 'Dashboard & Audit', icon: '📊' },
                 { id: 'fixkit',    label: 'Fix Kit Playground', icon: '🛠️' },
@@ -1449,14 +1450,14 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer group ${
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all duration-200 cursor-pointer group ${
                     activeTab === item.id
                       ? 'bg-white/[0.08] text-white'
                       : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
                   }`}
                 >
-                  <span className="text-sm shrink-0">{item.icon}</span>
-                  <span className="text-[11px] font-medium font-sans leading-tight">{item.label}</span>
+                  <span className="text-xs shrink-0">{item.icon}</span>
+                  <span className="text-[10px] font-medium font-sans leading-none">{item.label}</span>
                   {activeTab === item.id && (
                     <span className="ml-auto w-1 h-1 rounded-full bg-white/60 shrink-0" />
                   )}
@@ -1465,36 +1466,36 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             </nav>
 
             {/* Sidebar footer actions */}
-            <div className="px-3 py-4 border-t border-white/[0.06] space-y-1">
+            <div className="px-2.5 py-2.5 border-t border-white/[0.06] space-y-0.5 shrink-0">
               <button
                 type="button"
                 onClick={handleShare}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
               >
                 <span className="text-xs">🔗</span>
-                <span className="text-[10px] font-sans">{shareLabel}</span>
+                <span className="text-[9px] font-sans">{shareLabel}</span>
               </button>
               <button
                 type="button"
                 onClick={exportMarkdownReport}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
               >
                 <span className="text-xs">📋</span>
-                <span className="text-[10px] font-sans">{copiedReport ? 'Copied ✓' : 'Export report'}</span>
+                <span className="text-[9px] font-sans">{copiedReport ? 'Copied ✓' : 'Export report'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => { resetForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-all text-left cursor-pointer"
               >
                 <span className="text-xs">↩</span>
-                <span className="text-[10px] font-sans">New analysis</span>
+                <span className="text-[9px] font-sans">New analysis</span>
               </button>
             </div>
 
             {/* ── Sidebar Scan Form ──────────────────────────────── */}
-            <div className="px-3 pb-5 border-t border-white/[0.06] pt-4 shrink-0">
-              <p className="text-[9px] text-white/25 font-sans uppercase tracking-widest mb-3">New Scan</p>
+            <div className="px-2.5 pb-3 border-t border-white/[0.06] pt-2.5 shrink-0">
+              <p className="text-[8px] text-white/25 font-sans uppercase tracking-widest mb-1.5">New Scan</p>
               {renderScanForm(true)}
             </div>
           </aside>
