@@ -2576,7 +2576,22 @@ jobs:
                     <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
                   </div>
                   <div className="flex-grow bg-background border border-border/40 rounded px-2.5 py-1 text-[11px] truncate flex justify-between items-center">
-                    <span>https://acme-app.com{chromeHudPage}</span>
+                    <span>
+                      {(() => {
+                        let domain = 'acme-app.com';
+                        if (repoUrl && repoUrl !== 'Manual sitemap scan' && repoUrl !== 'demo') {
+                          try {
+                            const clean = repoUrl.replace(/\.git$/, '').trim();
+                            const parts = clean.split('/');
+                            const repoName = parts[parts.length - 1];
+                            if (repoName) {
+                              domain = `${repoName.toLowerCase()}.staging.dev`;
+                            }
+                          } catch {}
+                        }
+                        return `https://${domain}${chromeHudPage}`;
+                      })()}
+                    </span>
                     <span className="text-tertiary">🔒 SSL Secure</span>
                   </div>
                 </div>
