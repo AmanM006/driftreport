@@ -1537,10 +1537,22 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                 <div>
                   <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4">
                     <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-primary">Pendo Diagnostics</h4>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-green-covered animate-pulse" />
-                      <span className="text-[9px] font-mono text-green-covered uppercase font-medium">Online</span>
-                    </div>
+                    {(() => {
+                      const statusLower = (result.pendoMeta.status || '').toLowerCase();
+                      const isOffline = statusLower.includes('denied') || 
+                                        statusLower.includes('failed') || 
+                                        statusLower.includes('invalid') || 
+                                        statusLower.includes('offline') || 
+                                        statusLower.includes('connection');
+                      return (
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full animate-pulse ${isOffline ? 'bg-red-untracked' : 'bg-green-covered'}`} />
+                          <span className={`text-[9px] font-mono uppercase font-medium ${isOffline ? 'text-red-untracked' : 'text-green-covered'}`}>
+                            {isOffline ? 'Offline' : 'Online'}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="space-y-3 font-mono text-xs text-secondary">
                     <div className="flex justify-between">

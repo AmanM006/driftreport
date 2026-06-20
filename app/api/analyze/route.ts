@@ -373,6 +373,7 @@ export async function POST(request: Request) {
     const pendoRules: string[] = [];
     let pendoPagesCount = 0;
     let pendoFeaturesCount = 0;
+    let pendoStatus = 'Active (200 OK)';
 
     const isDemoPendo = pendoKey.toLowerCase().trim() === 'demo' || pendoKey.toLowerCase().trim().startsWith('mock');
 
@@ -382,6 +383,7 @@ export async function POST(request: Request) {
     if (isDemoPendo) {
       pendoPagesCount = 4;
       pendoFeaturesCount = 8;
+      pendoStatus = 'Demo Mode (Simulated)';
       pendoRules.push(
         '//*/',
         '//*/dashboard',
@@ -412,79 +414,77 @@ export async function POST(request: Request) {
 
         if (!tokenRes.ok) {
           const errTxt = await tokenRes.text();
-          return NextResponse.json(
-            { error: `Novus auth failed (${tokenRes.status}): ${errTxt}. Check your Client ID and Client Secret.` },
-            { status: 401 }
-          );
-        }
+          console.error('Novus token request failed:', errTxt);
+          pendoStatus = `Novus Auth Failed (${tokenRes.status})`;
+        } else {
+          const tokenData = await tokenRes.json() as { access_token?: string };
+          const bearerToken = tokenData.access_token;
 
-        const tokenData = await tokenRes.json() as { access_token?: string };
-        const bearerToken = tokenData.access_token;
+          if (!bearerToken) {
+            pendoStatus = 'Novus Auth Failed (No Token)';
+          } else {
+            // Step 2: Fetch pages & features from Novus API
+            const [pagesRes, featuresRes] = await Promise.all([
+              fetch('https://novus-api.pendo.io/api/v1/page', {
+                headers: {
+                  Authorization: `Bearer ${bearerToken}`,
+                  'Content-Type': 'application/json',
+                },
+              }),
+              fetch('https://novus-api.pendo.io/api/v1/feature', {
+                headers: {
+                  Authorization: `Bearer ${bearerToken}`,
+                  'Content-Type': 'application/json',
+                },
+              }),
+            ]);
 
-        if (!bearerToken) {
-          return NextResponse.json(
-            { error: 'Novus returned no access token. Try rotating your credential in the Novus API Access settings.' },
-            { status: 401 }
-          );
-        }
+            if (!pagesRes.ok || !featuresRes.ok) {
+              pendoStatus = `Novus API Failed (${pagesRes.status}/${featuresRes.status})`;
+            } else {
+              const pagesData = await pagesRes.json();
+              const featuresData = await featuresRes.json();
 
-        // Step 2: Fetch pages & features from Novus API
-        const [pagesRes, featuresRes] = await Promise.all([
-          fetch('https://novus-api.pendo.io/api/v1/page', {
-            headers: {
-              Authorization: `Bearer ${bearerToken}`,
-              'Content-Type': 'application/json',
-            },
-          }),
-          fetch('https://novus-api.pendo.io/api/v1/feature', {
-            headers: {
-              Authorization: `Bearer ${bearerToken}`,
-              'Content-Type': 'application/json',
-            },
-          }),
-        ]);
+              if (Array.isArray(pagesData)) pendoPagesCount = pagesData.length;
+              if (Array.isArray(featuresData)) pendoFeaturesCount = featuresData.length;
 
-        const pagesData = pagesRes.ok ? await pagesRes.json() : [];
-        const featuresData = featuresRes.ok ? await featuresRes.json() : [];
-
-        if (Array.isArray(pagesData)) pendoPagesCount = pagesData.length;
-        if (Array.isArray(featuresData)) pendoFeaturesCount = featuresData.length;
-
-        // Extract URL rules from pages
-        if (Array.isArray(pagesData)) {
-          for (const page of pagesData) {
-            if (page && typeof page === 'object') {
-              const p = page as { rules?: unknown[]; rule?: unknown; url?: string };
-              if (Array.isArray(p.rules)) {
-                pendoRules.push(...p.rules.map((r: unknown) => String(r)));
-              } else if (p.rule) {
-                pendoRules.push(String(p.rule));
-              } else if (p.url) {
-                pendoRules.push(String(p.url));
+              // Extract URL rules from pages
+              if (Array.isArray(pagesData)) {
+                for (const page of pagesData) {
+                  if (page && typeof page === 'object') {
+                    const p = page as { rules?: unknown[]; rule?: unknown; url?: string };
+                    if (Array.isArray(p.rules)) {
+                      pendoRules.push(...p.rules.map((r: unknown) => String(r)));
+                    } else if (p.rule) {
+                      pendoRules.push(String(p.rule));
+                    } else if (p.url) {
+                      pendoRules.push(String(p.url));
+                    }
+                  }
+                }
               }
-            }
-          }
-        }
 
-        // Extract URL rules from features
-        if (Array.isArray(featuresData)) {
-          for (const feature of featuresData) {
-            if (feature && typeof feature === 'object') {
-              const f = feature as { rules?: unknown[]; rule?: unknown; url?: string };
-              if (Array.isArray(f.rules)) {
-                pendoRules.push(...f.rules.map((r: unknown) => String(r)));
-              } else if (f.rule) {
-                pendoRules.push(String(f.rule));
-              } else if (f.url) {
-                pendoRules.push(String(f.url));
+              // Extract URL rules from features
+              if (Array.isArray(featuresData)) {
+                for (const feature of featuresData) {
+                  if (feature && typeof feature === 'object') {
+                    const f = feature as { rules?: unknown[]; rule?: unknown; url?: string };
+                    if (Array.isArray(f.rules)) {
+                      pendoRules.push(...f.rules.map((r: unknown) => String(r)));
+                    } else if (f.rule) {
+                      pendoRules.push(String(f.rule));
+                    } else if (f.url) {
+                      pendoRules.push(String(f.url));
+                    }
+                  }
+                }
               }
             }
           }
         }
       } catch (err: unknown) {
         console.error('Novus API fail:', err);
-        const errMsg = err instanceof Error ? err.message : 'Unknown error';
-        return NextResponse.json({ error: `Novus connection failed: ${errMsg}` }, { status: 502 });
+        pendoStatus = 'Novus Connection Failed';
       }
     } else {
       // Standard Pendo integration key (x-pendo-integration-key header)
@@ -505,61 +505,47 @@ export async function POST(request: Request) {
         ]);
 
         if (pagesRes.status === 401 || featuresRes.status === 401) {
-          return NextResponse.json(
-            { error: 'Invalid Pendo integration key. Find yours at app.pendo.io → Settings → Integrations.' },
-            { status: 401 }
-          );
-        }
-        if (pagesRes.status === 403 || featuresRes.status === 403) {
-          return NextResponse.json(
-            { error: 'Pendo API access denied. Check that your subscription includes API access.' },
-            { status: 403 }
-          );
-        }
-        if (!pagesRes.ok) {
-          const errTxt = await pagesRes.text();
-          return NextResponse.json({ error: `Pendo Pages API error: ${errTxt}` }, { status: pagesRes.status });
-        }
-        if (!featuresRes.ok) {
-          const errTxt = await featuresRes.text();
-          return NextResponse.json({ error: `Pendo Features API error: ${errTxt}` }, { status: featuresRes.status });
-        }
+          pendoStatus = 'Access Denied (401)';
+        } else if (pagesRes.status === 403 || featuresRes.status === 403) {
+          pendoStatus = 'Access Denied (403)';
+        } else if (!pagesRes.ok || !featuresRes.ok) {
+          pendoStatus = `API Error (${pagesRes.status}/${featuresRes.status})`;
+        } else {
+          const pagesData = await pagesRes.json();
+          const featuresData = await featuresRes.json();
 
-        const pagesData = await pagesRes.json();
-        const featuresData = await featuresRes.json();
+          if (Array.isArray(pagesData)) pendoPagesCount = pagesData.length;
+          if (Array.isArray(featuresData)) pendoFeaturesCount = featuresData.length;
 
-        if (Array.isArray(pagesData)) pendoPagesCount = pagesData.length;
-        if (Array.isArray(featuresData)) pendoFeaturesCount = featuresData.length;
-
-        if (Array.isArray(pagesData)) {
-          for (const page of pagesData) {
-            if (page && typeof page === 'object') {
-              const pageObj = page as { rules?: unknown[]; rule?: unknown };
-              if (Array.isArray(pageObj.rules)) {
-                pendoRules.push(...pageObj.rules.map((r: unknown) => String(r)));
-              } else if (pageObj.rule) {
-                pendoRules.push(String(pageObj.rule));
+          if (Array.isArray(pagesData)) {
+            for (const page of pagesData) {
+              if (page && typeof page === 'object') {
+                const pageObj = page as { rules?: unknown[]; rule?: unknown };
+                if (Array.isArray(pageObj.rules)) {
+                  pendoRules.push(...pageObj.rules.map((r: unknown) => String(r)));
+                } else if (pageObj.rule) {
+                  pendoRules.push(String(pageObj.rule));
+                }
               }
             }
           }
-        }
 
-        if (Array.isArray(featuresData)) {
-          for (const feature of featuresData) {
-            if (feature && typeof feature === 'object') {
-              const featureObj = feature as { rules?: unknown[]; rule?: unknown };
-              if (Array.isArray(featureObj.rules)) {
-                pendoRules.push(...featureObj.rules.map((r: unknown) => String(r)));
-              } else if (featureObj.rule) {
-                pendoRules.push(String(featureObj.rule));
+          if (Array.isArray(featuresData)) {
+            for (const feature of featuresData) {
+              if (feature && typeof feature === 'object') {
+                const featureObj = feature as { rules?: unknown[]; rule?: unknown };
+                if (Array.isArray(featureObj.rules)) {
+                  pendoRules.push(...featureObj.rules.map((r: unknown) => String(r)));
+                } else if (featureObj.rule) {
+                  pendoRules.push(String(featureObj.rule));
+                }
               }
             }
           }
         }
       } catch (err: unknown) {
         console.error('Pendo API fail:', err);
-        const errMsg = err instanceof Error ? err.message : 'Unknown Pendo API error';
-        return NextResponse.json({ error: `Pendo connection failed: ${errMsg}` }, { status: 502 });
+        pendoStatus = 'Connection Failed';
       }
     }
 
@@ -669,7 +655,7 @@ Please provide a single-sentence punchy verdict describing the health of our ana
 
     // Pendo Config Metadata Summary
     const pendoMeta = {
-      status: 'Active (200 OK)',
+      status: pendoStatus,
       pageRulesCount: pendoPagesCount,
       featureRulesCount: pendoFeaturesCount,
       totalRulesScanned: pendoRules.length,
