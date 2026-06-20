@@ -1,0 +1,27 @@
+name: Telemetry Drift Audit
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  audit-telemetry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Drift CLI
+        run: npm install -g @drift-report/cli
+
+      - name: Run Telemetry Drift Scanner
+        env:
+          PENDO_API_KEY: ${{ secrets.PENDO_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          drift-scanner --dir ./app --threshold 80 --comment-pr true
