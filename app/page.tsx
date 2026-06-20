@@ -346,9 +346,7 @@ export default function Home() {
 
   // Command Center states
   const [activeTab, setActiveTab] = useState<'dashboard' | 'fixkit' | 'cicd'>('dashboard');
-  const [isJudgeSimulatorActive, setIsJudgeSimulatorActive] = useState(false);
   const [focusedRoutePath, setFocusedRoutePath] = useState<string | null>(null);
-  const [showShortcutsLegend, setShowShortcutsLegend] = useState(true);
 
   // New Command Center features states
   const [inputMode, setInputMode] = useState<'github' | 'sitemap'>('github');
@@ -403,20 +401,7 @@ export default function Home() {
     `✓ Analysis complete — ${discoveredN !== null ? discoveredN : '{N}'} routes analyzed`
   ];
 
-  const judgeTerminalLines = [
-    "› Initializing Autonomous Judge Simulator...",
-    "› Cloning canonical repository tree (github.com/acme/dashboard-app)...",
-    "› Scanning app/ directory structure...",
-    "  - Found /app/page.tsx",
-    "  - Found /app/dashboard/settings/page.tsx",
-    "  - Found /app/billing/invoices/page.tsx",
-    "› Discovered 13 routes.",
-    "› Fetching Pendo production rules...",
-    "› Comparing codebase telemetry coverage...",
-    "✓ Scan complete! Generating visual dashboard..."
-  ];
-
-  const activeTerminalLines = isJudgeSimulatorActive ? judgeTerminalLines : terminalLines;
+  const activeTerminalLines = terminalLines;
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -450,83 +435,6 @@ export default function Home() {
     }
   }, []);
 
-  // Keyboard-First Triage Mode Hook
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is focused on input elements
-      if (
-        document.activeElement &&
-        (document.activeElement.tagName === 'INPUT' ||
-          document.activeElement.tagName === 'TEXTAREA' ||
-          (document.activeElement as HTMLElement).isContentEditable)
-      ) {
-        return;
-      }
-
-      if (!result || !analysisCompleted) return;
-
-      const key = e.key.toLowerCase();
-      const uncoveredRoutes = result.routes.filter(r => r.status !== 'covered');
-
-      if (key === 'j') {
-        e.preventDefault();
-        if (uncoveredRoutes.length === 0) {
-          showToast("All routes are covered!");
-          return;
-        }
-
-        // Switch to Fix Kit tab to see the focus!
-        setActiveTab('fixkit');
-
-        let nextIndex = 0;
-        if (focusedRoutePath) {
-          const currentIndex = uncoveredRoutes.findIndex(r => r.path === focusedRoutePath);
-          if (currentIndex !== -1) {
-            nextIndex = (currentIndex + 1) % uncoveredRoutes.length;
-          }
-        }
-
-        const nextRoute = uncoveredRoutes[nextIndex];
-        setFocusedRoutePath(nextRoute.path);
-        showToast(`Focusing ${nextRoute.path}`);
-
-        // Scroll to card
-        setTimeout(() => {
-          const elementId = nextRoute.path.replace(/\//g, '-');
-          const element = document.getElementById(elementId);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 100);
-      } else if (key === 'f') {
-        e.preventDefault();
-        if (uncoveredRoutes.length === 0) return;
-
-        let targetRoute = uncoveredRoutes.find(r => r.path === focusedRoutePath);
-        if (!targetRoute) {
-          // Default to the first uncovered one if nothing focused
-          targetRoute = uncoveredRoutes[0];
-          setFocusedRoutePath(targetRoute.path);
-        }
-
-        if (targetRoute) {
-          handleSimulateEvent(targetRoute);
-        }
-      } else if (key === 's') {
-        e.preventDefault();
-        handleShare();
-      } else if (key === 'escape') {
-        e.preventDefault();
-        setShowShortcutsLegend(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, analysisCompleted, focusedRoutePath]);
 
   const getGrade = (score: number): string => {
     if (score >= 90) return 'A';
@@ -647,143 +555,6 @@ export default function Home() {
     }, 100);
   };
 
-  const handleRunJudgeDemo = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setAnalysisCompleted(false);
-    setIsJudgeSimulatorActive(true);
-    setIsLoading(true);
-    setLoadingStep(1);
-    setError(null);
-    setLiveEvents([]);
-
-    trackPendoEvent('judge_demo_started', {});
-
-    let currentStep = 1;
-    const interval = setInterval(() => {
-      currentStep++;
-      setLoadingStep(currentStep);
-
-      if (currentStep === judgeTerminalLines.length) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsLoading(false);
-          // Set initial copy of MOCK_DATA
-          const initialMock = JSON.parse(JSON.stringify(MOCK_DATA));
-          setResult(initialMock);
-          setRepoUrl(initialMock.repoUrl);
-          setAnalysisCompleted(true);
-          setShowDemoBanner(true);
-          setActiveTab('dashboard');
-
-          setTimeout(() => {
-            resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-
-          // Step 3: Trigger Live Telemetry Feed ticker
-          setTimeout(() => {
-            const trafficEvents = [
-              { route: '/', eventName: 'home_viewed', name: 'Home / landing' },
-              { route: '/dashboard', eventName: 'dashboard_viewed', name: 'Main dashboard' },
-              { route: '/billing', eventName: 'billing_viewed', name: 'Billing & plans' },
-            ];
-
-            trafficEvents.forEach((evt, idx) => {
-              setTimeout(() => {
-                const timestamp = new Date().toLocaleTimeString();
-                setLiveEvents(prev => [
-                  {
-                    timestamp,
-                    route: evt.route,
-                    eventName: evt.eventName,
-                    source: 'pendo_sdk',
-                    status: 'transmitted'
-                  },
-                  ...prev
-                ]);
-                // Fire actual browser event
-                trackPendoEvent(evt.eventName, { route: evt.route, source: 'judge_simulator' });
-              }, idx * 1200);
-            });
-
-            // Step 4: Auto Click "Simulate Fix" on untracked /dashboard/settings
-            setTimeout(() => {
-              // Switch to Fix Kit tab to show the patches live!
-              setActiveTab('fixkit');
-              setFocusedRoutePath('/dashboard/settings');
-              showToast("⚡ Auto-Triage: Focused /dashboard/settings");
-
-              setTimeout(() => {
-                // Perform simulation fix
-                const routeItem = initialMock.routes.find((r: AnalysisRoute) => r.path === '/dashboard/settings');
-                if (routeItem) {
-                  // Fire event
-                  trackPendoEvent(routeItem.eventName, {
-                    route: routeItem.path,
-                    source: 'autonomous_remediation'
-                  });
-
-                  // Add log to feed
-                  const timestamp = new Date().toLocaleTimeString();
-                  setLiveEvents(prev => [
-                    {
-                      timestamp,
-                      route: routeItem.path,
-                      eventName: routeItem.eventName,
-                      source: 'Auto-Remediation',
-                      status: 'fixed'
-                    },
-                    ...prev
-                  ]);
-
-                  showToast("⚡ Autonomous Fix: Patched telemetry on /dashboard/settings!");
-
-                  // Mutate locally
-                  setResult(prev => {
-                    if (!prev) return null;
-                    const updatedRoutes = prev.routes.map(r => {
-                      if (r.path === '/dashboard/settings') {
-                        return { ...r, status: 'covered' as const };
-                      }
-                      return r;
-                    });
-                    const totalRoutes = updatedRoutes.length;
-                    const coveredCount = updatedRoutes.filter(r => r.status === 'covered').length;
-                    const partialCount = updatedRoutes.filter(r => r.status === 'partial').length;
-                    const untrackedCount = updatedRoutes.filter(r => r.status === 'untracked').length;
-                    const score = totalRoutes > 0 
-                      ? Math.round(((coveredCount + 0.5 * partialCount) / totalRoutes) * 100) 
-                      : 100;
-                    const grade = getGrade(score);
-
-                    return {
-                      ...prev,
-                      score,
-                      grade,
-                      coveredCount,
-                      partialCount,
-                      untrackedCount,
-                      routes: updatedRoutes
-                    };
-                  });
-                }
-
-                // Switch back to dashboard to show updated score & funnel validation status!
-                setTimeout(() => {
-                  setActiveTab('dashboard');
-                  setFocusedRoutePath(null);
-                  showToast("📊 Score updated dynamically!");
-                }, 2000);
-
-              }, 2500);
-
-            }, 4200);
-
-          }, 1500);
-
-        }, 800);
-      }
-    }, 400);
-  };
 
   const handleShare = () => {
     if (!result) return;
@@ -1269,20 +1040,11 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
         <div className="flex gap-2 pt-1">
           <button
             type="submit"
-            className={`flex-1 bg-white text-[#030307] font-sans font-semibold rounded-full hover:bg-white/90 active:scale-[0.99] transition-all cursor-pointer shadow-md flex items-center justify-center ${
+            className={`w-full bg-white text-[#030307] font-sans font-semibold rounded-full hover:bg-white/90 active:scale-[0.99] transition-all cursor-pointer shadow-md flex items-center justify-center ${
               isSidebar ? 'h-8 text-[10px] rounded-lg' : 'h-11 text-xs'
             }`}
           >
             {isSidebar ? 'Scan' : 'Analyze drift →'}
-          </button>
-          <button
-            type="button"
-            onClick={handleRunJudgeDemo}
-            className={`flex-1 bg-transparent text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/5 font-sans font-semibold rounded-full active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-              isSidebar ? 'h-8 text-[10px] rounded-lg' : 'h-11 text-xs'
-            }`}
-          >
-            {isSidebar ? '⚡ Demo' : '⚡ Run Judge Demo'}
           </button>
         </div>
         
@@ -1440,7 +1202,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             </div>
 
             {/* Nav items */}
-            <nav className="flex-1 px-2.5 py-3 space-y-0.5 overflow-hidden">
+            <nav className="px-2.5 py-3 space-y-0.5 shrink-0">
               {([
                 { id: 'dashboard', label: 'Dashboard & Audit', icon: '📊' },
                 { id: 'fixkit',    label: 'Fix Kit Playground', icon: '🛠️' },
@@ -1485,6 +1247,43 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
               </button>
             </div>
 
+            {/* Past Runs section (ChatGPT chat history style) */}
+            <div className="flex-1 border-t border-white/[0.06] pt-2 flex flex-col min-h-0 overflow-hidden">
+              <span className="px-2.5 pb-1 text-[8px] text-white/20 uppercase tracking-widest font-sans font-bold">Past Audits</span>
+              <div className="flex-1 overflow-y-auto px-2 py-0.5 space-y-0.5 no-scrollbar">
+                {history.length === 0 ? (
+                  <span className="text-[9px] text-white/20 font-sans block px-2.5 py-1">No past runs</span>
+                ) : (
+                  history.map((entry) => {
+                    const isCurrent = result && result.repoUrl === entry.repoUrl;
+                    return (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        onClick={() => {
+                          setResult(entry.result);
+                          setRepoUrl(entry.repoUrl);
+                          setAnalysisCompleted(true);
+                          setShowDemoBanner(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-all duration-200 cursor-pointer group ${
+                          isCurrent
+                            ? 'bg-white/[0.06] text-white'
+                            : 'text-white/35 hover:text-white/60 hover:bg-white/[0.02]'
+                        }`}
+                      >
+                        <span className="text-[10px] shrink-0">📄</span>
+                        <span className="text-[9px] font-sans truncate flex-1 leading-none">{entry.repoUrl.replace('github.com/', '')}</span>
+                        <span className={`text-[8px] font-bold px-1 rounded shrink-0 leading-normal ${getBadgeColor(entry.grade)}`}>
+                          {entry.grade}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
             {/* ── Sidebar New Scan Action ──────────────────────────────── */}
             <div className="px-2.5 pb-3 border-t border-white/[0.06] pt-2.5 shrink-0">
               <button
@@ -1522,9 +1321,9 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                 <button
                   type="button"
                   onClick={() => setIsChromeHudOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-background font-mono text-[10px] font-bold rounded-md hover:bg-opacity-90 active:scale-[0.98] transition-all border border-border cursor-pointer shadow-md"
+                  className="flex items-center justify-center px-6 py-1 bg-primary text-background font-mono text-[10px] font-bold rounded-md hover:bg-opacity-90 active:scale-[0.98] transition-all border border-border cursor-pointer shadow-md min-w-[90px]"
                 >
-                  ⚡ HUD
+                  HUD
                 </button>
               </div>
             </div>
@@ -1644,7 +1443,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             </div>
 
             {/* Right Column: Stats */}
-            <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-4 self-start">
               <div className="border border-border p-3 bg-surface rounded-md flex flex-col gap-1 justify-start">
                 <span className="text-[9px] font-mono text-tertiary uppercase tracking-wider">
                   Total Routes
@@ -2669,60 +2468,10 @@ jobs:
 
 
 
-          {/* Floating Share Button */}
-          <div className="fixed bottom-6 right-6 z-40">
-            <button
-              type="button"
-              onClick={handleShare}
-              className={`flex items-center gap-2 px-4 py-2.5 bg-primary text-background font-mono text-xs font-bold rounded-md shadow-2xl hover:bg-opacity-90 active:scale-[0.98] transition-all border border-border cursor-pointer ${
-                shareLabel.includes('copied') ? 'text-green-covered border-green-covered/40' : ''
-              }`}
-            >
-              {shareLabel}
-            </button>
-          </div>
         </div>
       )
     )}
 
-      {/* Floating Keyboard Shortcuts Legend */}
-      {analysisCompleted && showShortcutsLegend && (
-        <div className="fixed bottom-6 left-6 z-40 bg-surface border border-border p-4 rounded-md shadow-2xl w-52 font-mono text-[10px] space-y-2 select-none animate-fade-in">
-          <div className="flex justify-between items-center border-b border-border/60 pb-1.5 mb-1.5">
-            <span className="text-secondary uppercase font-bold tracking-wider">Keyboard shortcuts</span>
-            <button
-              onClick={() => setShowShortcutsLegend(false)}
-              className="text-tertiary hover:text-primary transition-colors cursor-pointer bg-transparent border-none p-0 text-[11px]"
-            >
-              [esc]
-            </button>
-          </div>
-          <div className="space-y-1.5 text-secondary">
-            <div className="flex justify-between items-center">
-              <span>Next Untracked</span>
-              <kbd className="px-1.5 py-0.5 bg-background border border-border rounded text-primary font-bold shadow-sm">J</kbd>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Simulate Fix</span>
-              <kbd className="px-1.5 py-0.5 bg-background border border-border rounded text-primary font-bold shadow-sm">F</kbd>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Share Report</span>
-              <kbd className="px-1.5 py-0.5 bg-background border border-border rounded text-primary font-bold shadow-sm">S</kbd>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Shortcuts Re-open Button if closed */}
-      {analysisCompleted && !showShortcutsLegend && (
-        <button
-          onClick={() => setShowShortcutsLegend(true)}
-          className="fixed bottom-6 left-6 z-40 bg-surface border border-border hover:bg-background px-2.5 py-1.5 rounded-md shadow-2xl font-mono text-[9px] text-secondary hover:text-primary transition-colors cursor-pointer"
-        >
-          [?] Shortcuts
-        </button>
-      )}
 
       {/* Lightweight Custom Toast */}
       {toastMessage && (

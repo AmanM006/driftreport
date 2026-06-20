@@ -644,12 +644,6 @@ Please provide a single-sentence punchy verdict describing the health of our ana
       zombieRules = pendoRulePaths.filter((rulePath) => {
         return !finalClassifications.some((item) => isRouteCovered(item.route, [rulePath]));
       });
-    } else {
-      zombieRules = [
-        '//*/old-billing-v1',
-        '//*/dashboard/analytics/charts/legacy-pie-chart',
-        '//*/beta/deprecated-feature-flow'
-      ];
     }
 
     // Pendo Config Metadata Summary
@@ -661,21 +655,27 @@ Please provide a single-sentence punchy verdict describing the health of our ana
     };
 
     // ----------------------------------------------------
-    // STEP 6: Gemini Product Analytics Audit
+    // STEP 6: Product PM Analytics Audit (Dynamically computed as safe real fallback)
     // ----------------------------------------------------
+    const untrackedRoutes = routesAnalysis.filter(r => r.status === 'untracked');
+    const fallbackBlindspots = untrackedRoutes.slice(0, 2).map(r => `Telemetry gap: page "${r.name}" (${r.path}) has no active tracking rules.`);
+    if (fallbackBlindspots.length === 0) {
+      fallbackBlindspots.push('All discovered routes have active telemetry coverage.');
+    }
+    const fallbackFunnelSteps = routesAnalysis.slice(0, 3).map(r => r.path);
+    const fallbackFunnel = {
+      name: 'Discovered User Journey Funnel',
+      steps: fallbackFunnelSteps.length > 0 ? fallbackFunnelSteps : ['/']
+    };
+    const fallbackTips = untrackedRoutes.slice(0, 2).map(r => `Instrument click elements or page views on ${r.name} (${r.path}).`);
+    if (fallbackTips.length === 0) {
+      fallbackTips.push('Audit existing rule filters to maintain high coverage.');
+    }
+
     let audit = {
-      blindspots: [
-        'Critical blindspot: checkout and payment conversion details are invisible.',
-        'No telemetry on onboarding settings updates or dashboard user interactions.'
-      ],
-      funnel: {
-        name: 'Standard User Journey Funnel',
-        steps: ['/', '/dashboard', '/profile']
-      },
-      tips: [
-        'Track click actions on billing invoices to measure churn intent.',
-        'Instrument feature click tracking on dashboard settings.'
-      ]
+      blindspots: fallbackBlindspots,
+      funnel: fallbackFunnel,
+      tips: fallbackTips
     };
 
     if (!geminiErrorOccurred) {
