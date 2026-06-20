@@ -265,8 +265,8 @@ function safeBtoa(str: string): string {
 // Safe UTF-8 Base64 URL-safe Decoding
 function safeAtob(str: string): string {
   try {
-    // Accept both URL-safe and standard base64
-    const normalized = str.replace(/-/g, '+').replace(/_/g, '/');
+    // Accept URL-safe base64, standard base64, and decode space replacements (often '+' becomes ' ' in query strings)
+    const normalized = str.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
     // Add back padding if needed
     const padded = normalized + '=='.slice(0, (4 - normalized.length % 4) % 4);
     const binary = atob(padded);
@@ -278,7 +278,7 @@ function safeAtob(str: string): string {
   } catch (e) {
     console.error(e);
     try {
-      const normalized = str.replace(/-/g, '+').replace(/_/g, '/');
+      const normalized = str.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
       return atob(normalized);
     } catch {
       return '';
@@ -1311,7 +1311,7 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-start bg-[#030307] text-primary px-4 py-8 selection:bg-[#222] w-full">
+    <main className={`flex flex-col ${analysisCompleted ? 'bg-[#07070d] h-screen overflow-hidden' : 'min-h-screen items-center justify-start bg-[#030307] px-4 py-8'} text-primary selection:bg-[#222] w-full`}>
       {!analysisCompleted ? (
         <div className="w-full flex flex-col items-center justify-center max-w-3xl mx-auto space-y-8 my-8">
           {/* Hero Section */}
@@ -1401,10 +1401,11 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
       ) : (
         /* Results view — sidebar dashboard layout */
         result && (
-          <div ref={resultsRef} id="results-section" className="w-full max-w-[1600px] flex rounded-2xl border border-white/[0.07] overflow-hidden shadow-2xl min-h-[85vh] bg-[#07070d] animate-fade-in">
+          <div ref={resultsRef} id="results-section" className="w-full flex-1 flex h-full overflow-hidden bg-[#07070d] animate-fade-in">
 
           {/* ── LEFT SIDEBAR ─────────────────────────────────────────── */}
-          <aside className="w-[260px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col overflow-y-auto">
+          <aside className="w-[260px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col overflow-y-auto no-scrollbar">
+
 
             {/* Repo / brand */}
             <div className="px-5 py-5 border-b border-white/[0.06]">
