@@ -4,37 +4,54 @@
 > You refactor a directory, rename a route, or push a feature flag, and your Pendo/Novus telemetry silently disintegrates. Your metrics break, conversion funnels go blind, and your team makes decisions based on ghost schemas. 
 >
 > **Drift Report** automatically audits, validates, and bridges the drift between codebase routes and Pendo analytics schemas. Stop tracking rot before it hits production.
+>
+> **Live Deployed App**: [driftreport.vercel.app](https://driftreport.vercel.app)
 
 ---
 
-## ⚡ The 15 Domination Loops
+## 🏆 Hackathon Judging Criteria Alignment
 
-Drift Report was engineered to completely secure victory at the World Product Day Hackathon by providing an end-to-end command center for telemetry auditing:
+### 1. Product Thinking (25%) — *Is the problem worth solving?*
+* **The Problem**: Product Managers spend days designing conversion funnels and user analytics, but developers frequently break tracking keys when refactoring file directories, renaming routes, or updating layouts. This results in "tracking drift"—where business decisions are made based on missing or corrupted data.
+* **The Solution**: Drift Report acts as a telemetry command center that aligns developers and PMs. It tells engineers exactly what routes exist in the codebase, which ones are tracked, which are partially tracked, and what dynamic payloads are missing.
+* **Target Audience**: Product Engineers, Analytics Leads, and Product Managers who need clean, reliable, and automated telemetry audits before code reaches production.
 
-1. **Feature Flag & Git Sparkline Drift (Loop 1)**: Track score trends across git commits with a custom brutalist SVG Sparkline and detect routes locked behind active flags (`flags.ts`) that lack matching tracking rules.
-2. **Traffic-Weighted Severity Grid (Loop 2)**: Prioritizes telemetry debt by matching route views to Est. Monthly Views and Est. Revenue at Risk ($/mo), focusing team efforts on critical funnels first.
-3. **One-Click Issue Exporters (Loop 3)**: Auto-generate pre-filled markdown tickets for **GitHub Issues** and **Linear** directly from telemetry gap cards.
-4. **Gemini Visual Component Audits (Loop 4)**: Maps route structures to mock UI elements (e.g., `StripeElement`, `AuthCard`, `LineChart`) to feed Gemini 2.5 Flash for contextual PM feedback.
-5. **Simulated Chrome HUD & Sitemap Scan (Loop 5)**: PMs can scan site structures without GitHub keys using the No-Code Sitemap Scan or test overlays using the floating simulated Chrome Extension Drift HUD.
-6. **Offline Mock Resiliency (Loop 6/15)**: Instantly handles third-party API rate limits by falling back to local simulation caches and displays a warning banner.
-7. **CI/CD Telemetry Guardrails (Loop 7)**: Generates a copy-pasteable GitHub Action configuration that blocks pull requests if codebase-to-analytics coverage falls below target thresholds.
-8. **Next.js Glob-to-Regex Translator (Loop 8)**: Upgraded path matcher parsing Next.js catch-all (`[...slug]`) and optional catch-all (`[[...slug]]`) routing patterns to prevent matching noise.
-9. **Pendo Shadow Schema Map (Loop 9)**: Gemini reads route structures to predict expected telemetry schemas (key/type pairs), catching parameter mismatches.
-10. **Zombie Telemetry Detection (Loop 10)**: Scans your active Pendo rule list to identify "Zombie rules" tracking dead routes that no longer exist in the codebase.
-11. **Payload Schema Warning (Loop 11)**: Scans analytics snippets to catch invalid keys or placeholder configurations (`undefined` / `empty`), providing one-click remediation.
-12. **Compressed Share State (Loop 12)**: Serializes report diagnostics into highly compressed, safe Base64 URL sharing strings that bypass browser length limits and avoid decoding crashes.
-13. **Self-Telemetry Loop (Loop 13)**: Integrates `window.pendo.track` to record user interactions (`run_judge_demo`, `remediate_payload`) back into the dashboard's own analytics nodes.
-14. **Autonomous Judge Simulator (Loop 14)**: A 10-second automated walk-through demonstrating file tree scanning, visual chart updates, simulated user traffic ticks, and auto-remediation.
+### 2. Craft and Execution (25%) — *Is it actually good?*
+* **Coherent, Considerate UX**: Designed in a dark brutalist theme featuring strict HSL color limits (curated text/badge indicators), `#0a0a0a` dashboard boundaries, and a 100vh viewport container that prevents layout stretching.
+* **Robust Next.js Route Parsing**: Built a TypeScript **Glob-to-Regex Translator** that maps wildcard Pendo rules (`//*/dashboard/users/*`) against Next.js App Router dynamic routes (like `[id]`, catch-all `[...slug]`, and optional catch-all `[[...slug]]`) with zero false matches.
+* **Frictionless Engineering Workflows**: Integrates a **One-Click Issue Exporter** to generate pre-filled Markdown tickets for **GitHub Issues** and **Linear**, letting teams triage analytics bugs alongside standard features.
+* **Interactive Sparkline**: An SVG sparkline that dynamically maps real git commits and tracks drift recovery progress (HEAD commit as the final dot node).
+
+### 3. Originality and Ambition (25%) — *Does this make us sit up?*
+* **Dynamic Chrome Drift HUD Sandbox**: Rather than hardcoding static mock pages, our **HUD Browser Sandbox** dynamically detects the scanned repository name and routes. It displays a custom staging address bar (e.g. `https://your-repo-name.staging.dev`), renders page layouts with glowing outlines (green for tracked, red for untracked), and simulates live telemetry streams in real-time.
+* **Click-to-Inject Telemetry**: Developers can click **"Inject Telemetry Listener"** directly inside the simulated Chrome HUD to push rules to the Pendo API and patch codebase drift in real-time.
+* **Base64 Stateless Share State**: Implemented a stateless sharing engine using percent-escaped UTF-8 Base64 strings. Users can share exact audit reports (with classified routes, scores, and commits) simply by sharing the URL, bypassing database requirements.
+
+### 4. Shippedness (25%) — *Is it real?*
+* **100% Real API Scans**: A stranger can land on [driftreport.vercel.app](https://driftreport.vercel.app), paste a public GitHub URL (like `https://github.com/AmanM006/driftreport-test`), enter their token, and watch the system scan the repo, retrieve the **actual git commits**, map the **real routes**, and perform a live Gemini PM audit.
+* **Graceful API Resiliency**: Recognizing that Pendo Integration API keys are an enterprise add-on that many developers don't have, the backend handles Pendo API access errors (401/403) gracefully. Instead of failing the scan, it flags Pendo as "Offline/Access Denied" in red, applies demo rules to show functional capabilities, and successfully completes the analysis with the user's **real repo routes and real commits**.
+
+---
+
+## ⚡ Key Features (The Domination Loops)
+
+1. **Traffic-Weighted Severity Grid**: Prioritizes telemetry debt by matching route views to Est. Monthly Views and Est. Revenue at Risk ($/mo), focusing team efforts on critical funnels first.
+2. **Gemini Visual Component Audits**: Maps route structures to mock UI elements (e.g., `StripeElement`, `AuthCard`, `LineChart`) to feed Gemini 2.5 Flash for contextual PM feedback.
+3. **No-Code Sitemap Scan**: PMs can scan site structures without GitHub keys by pasting plain sitemap text line-by-line.
+4. **CI/CD Telemetry Guardrails**: Generates a copy-pasteable GitHub Action configuration that blocks pull requests if codebase-to-analytics coverage falls below target thresholds.
+5. **Zombie Telemetry Detection**: Scans active Pendo rule lists to identify "Zombie rules" tracking dead routes that no longer exist in the codebase.
+6. **Payload Schema Warning**: Scans analytics snippets to catch invalid keys or placeholder configurations (`undefined` / `empty`), providing one-click remediation.
+7. **Autonomous Judge Simulator**: A 10-second automated walk-through demonstrating file tree scanning, visual chart updates, simulated user traffic ticks, and auto-remediation.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Framework**: Next.js 15 (App Router, Tailwind CSS, TypeScript)
-- **AI Core**: Gemini 2.5 Flash (Dynamic classification, product audits, expected schemas)
-- **API Nodes**: Pendo Engage v1 API & GitHub Trees API proxies
+- **Framework**: Next.js 15 (App Router, Tailwind CSS v4, TypeScript)
+- **AI Core**: Gemini 2.5 Flash (Dynamic route classification, product audits, expected schemas)
+- **API Nodes**: Pendo Engage v1 API & GitHub Trees/Commits REST APIs
 - **Styling**: Brutalist Technical aesthetics (strict HSL palettes, `#0a0a0a` surfaces, `#222` borders, and max `4px` border-radius bounds)
-- **Deployment**: Vercel-ready, fully stateless (zero database, zero auth, zero session storage)
+- **Deployment**: Vercel-ready, fully stateless
 
 ---
 
@@ -45,7 +62,7 @@ Drift Report was engineered to completely secure victory at the World Product Da
 npm install
 ```
 
-### 2. Configure Environment variables
+### 2. Configure Environment Variables
 Create a `.env.local` file:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
