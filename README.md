@@ -33,6 +33,26 @@
 
 ---
 
+## ⚙️ How It Works (System Architecture)
+
+Drift Report is built as a fully functional server-side Next.js 15 application. It does not require any database setup; instead, it runs stateless transactions across third-party web APIs on demand.
+
+### Telemetry Audit Execution Pipeline:
+1. **GitHub Analysis (Serverless Backend)**: 
+   When you click "Analyze Drift", a `POST` request is dispatched to our Next.js backend API at `/api/analyze`. The server acts as a proxy:
+   - It queries the **GitHub Trees API** (`https://api.github.com/repos/{owner}/{repo}/git/trees/HEAD`) recursively to discover page endpoints (filtering for `page.tsx`, `page.jsx`, `page.js` files inside `/app/` directories).
+   - It queries the **GitHub Commits API** to fetch the last 5 commits for Git history sparkline rendering.
+2. **Gemini AI Page Classification**: 
+   The server feeds the discovered routes to **Gemini 2.5 Flash**. Gemini classifies the routes into human-readable descriptions, gives them standardized event names (`billing_checkout_view`), and predicts custom tracking payload schema requirements.
+3. **Pendo Rules Fetching**: 
+   The backend makes a server-to-server request to the Pendo API to gather the user's active page rules, features, and wildcard regex configurations.
+4. **Fuzzy Route Matching**: 
+   The backend maps Pendo rules onto the codebase layout using a TypeScript **Glob-to-Regex translator**. If a rule (e.g. `//*/settings/*`) matches a file path (`/app/settings/page.tsx`), it marks the route as `covered`.
+5. **JSON Report Output**: 
+   The server outputs a consolidated analysis payload to the React frontend to update the gauges, charts, issue generators, and live HUD simulator viewports.
+
+---
+
 ## ⚡ Key Features (The Domination Loops)
 
 1. **Traffic-Weighted Severity Grid**: Prioritizes telemetry debt by matching route views to Est. Monthly Views and Est. Revenue at Risk ($/mo), focusing team efforts on critical funnels first.
