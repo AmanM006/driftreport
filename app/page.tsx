@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import HeroVisual from './components/HeroVisual';
 
 
 interface AnalysisRoute {
@@ -250,23 +249,27 @@ useEffect(() => {
   })
 };
 
-// Safe UTF-8 Base64 Encoding (Loop 12)
+// Safe UTF-8 Base64 URL-safe Encoding
 function safeBtoa(str: string): string {
   try {
     const bytes = new TextEncoder().encode(str);
     const binString = Array.from(bytes, byte => String.fromCharCode(byte)).join("");
-    return btoa(binString);
+    // Produce URL-safe base64: replace + with -, / with _, strip padding =
+    return btoa(binString).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   } catch (e) {
     console.error(e);
-    return btoa(str);
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   }
 }
 
-// Safe UTF-8 Base64 Decoding (Loop 12)
+// Safe UTF-8 Base64 URL-safe Decoding
 function safeAtob(str: string): string {
   try {
-    const normalized = str.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (4 - str.length % 4) % 4);
-    const binary = atob(normalized);
+    // Accept both URL-safe and standard base64
+    const normalized = str.replace(/-/g, '+').replace(/_/g, '/');
+    // Add back padding if needed
+    const padded = normalized + '=='.slice(0, (4 - normalized.length % 4) % 4);
+    const binary = atob(padded);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
@@ -1320,11 +1323,6 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
             <p className="text-xs md:text-sm text-slate-400 max-w-md font-sans leading-relaxed mb-6">
               Compare your codebase pages against Pendo analytics in real-time. Detect tracking drift, validate user funnels, and auto-generate telemetry fixes.
             </p>
-
-            {/* Interactive Telemetry Orb Mesh Globe */}
-            <div className="w-full max-w-2xl mx-auto my-2">
-              <HeroVisual />
-            </div>
           </div>
 
           {/* Past Analyses History */}
@@ -1403,10 +1401,10 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
       ) : (
         /* Results view — sidebar dashboard layout */
         result && (
-          <div ref={resultsRef} id="results-section" className="w-full max-w-[1400px] flex rounded-2xl border border-white/[0.07] overflow-hidden shadow-2xl min-h-[85vh] bg-[#07070d] animate-fade-in">
+          <div ref={resultsRef} id="results-section" className="w-full max-w-[1600px] flex rounded-2xl border border-white/[0.07] overflow-hidden shadow-2xl min-h-[85vh] bg-[#07070d] animate-fade-in">
 
           {/* ── LEFT SIDEBAR ─────────────────────────────────────────── */}
-          <aside className="w-[220px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col">
+          <aside className="w-[260px] shrink-0 bg-[#0a0a0f] border-r border-white/[0.06] flex flex-col overflow-y-auto">
 
             {/* Repo / brand */}
             <div className="px-5 py-5 border-b border-white/[0.06]">
@@ -1491,6 +1489,12 @@ ${route.featureFlag ? `*Note: This route is wrapped in the feature flag \`${rout
                 <span className="text-xs">↩</span>
                 <span className="text-[10px] font-sans">New analysis</span>
               </button>
+            </div>
+
+            {/* ── Sidebar Scan Form ──────────────────────────────── */}
+            <div className="px-3 pb-5 border-t border-white/[0.06] pt-4 shrink-0">
+              <p className="text-[9px] text-white/25 font-sans uppercase tracking-widest mb-3">New Scan</p>
+              {renderScanForm(true)}
             </div>
           </aside>
 
@@ -2664,14 +2668,7 @@ jobs:
           </div> {/* Close Tab content wrapper */}
         </div> {/* Close Right Main Content panel */}
 
-        {/* ── RIGHT SCANNER SIDEBAR ────────────────────────────────── */}
-        <aside className="w-[320px] shrink-0 bg-[#0a0a0f] border-l border-white/[0.06] flex flex-col p-5 overflow-y-auto space-y-6">
-          <div className="border-b border-white/[0.06] pb-3 shrink-0">
-            <h3 className="font-mono text-xs font-bold text-primary">🔍 Scan Another Repo</h3>
-            <p className="text-[9px] font-mono text-secondary mt-0.5">Trigger a new drift analysis or simulator event</p>
-          </div>
-          {renderScanForm(true)}
-        </aside>
+
 
           {/* Floating Share Button */}
           <div className="fixed bottom-6 right-6 z-40">
